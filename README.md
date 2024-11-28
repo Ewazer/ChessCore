@@ -15,12 +15,11 @@ Chess.py is a chess game written in Python. This project allows you to play ches
 
 ## Utilisation
 
-To start the game, run the [`main.py`](main.py) file:
+To start the game, run the [`chess.py`](chess.py) file:
 ```sh
 python 
 
-main.py
-
+chess.py
 
 ```
 
