@@ -71,10 +71,20 @@ piece = {
     -7: "roi_noir"
 }
 
+castling_p_white = False
+castling_p_black = False
+big_castling_p_white = False
+big_castling_p_black = False
+info_move = {}
+rook_m = {}
+list_game_move = []
+list_game_board_move = []
+board = []
+
 def check_repetition():
     serialized_boards = [tuple(tuple(row) for row in board) for board in list_game_board_move]
     counts = Counter(serialized_boards)
-    for board, count in counts.items():
+    for serialized_board, count in counts.items():
         if count >= 3:
             return True
     return False
@@ -397,20 +407,20 @@ def valid_queen_move(move):
     else:
         return('illegal')
 
-def board_print(style,color,board):
+def board_print(style,color,board_test):
     if style:
-        board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if color == 'white' else [[piece_note_style[e] for e in r] for r in board]
+        board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board_test] if color == 'white' else [[piece_note_style[e] for e in r] for r in board_test]
     else:    
-        board_rendu = [list(reversed([piece_note[e] for e in r])) for r in board]
+        board_rendu = [list(reversed([piece_note[e] for e in r])) for r in board_test]
     if color == 'white':
         board_rendu.reverse()
     for row in board_rendu:
         print(row)
 
-def find_piece(board,piece):
-    for x in range(len(board)):
-        for y in range(len(board[x])):
-            if board[x][y] == piece:
+def find_piece(board_test,piece):
+    for x in range(len(board_test)):
+        for y in range(len(board_test[x])):
+            if board_test[x][y] == piece:
                 return (y+1,x+1)
 
 def is_check(color,board_actual):
@@ -835,7 +845,7 @@ def play_move():
 
     if info_move["start_value"] == 1 or info_move["start_value"] == -1:
         result_valid_pion = valid_pion_move(info_move,False)
-        if result_valid_pion != 'valid' and result_valid_pion != 'en passant':
+        if result_valid_pion not in {'valid', 'en passant'}:
             print("🚫---invalide move---🚫")
             return
         elif result_valid_pion == 'en passant':
@@ -1046,8 +1056,8 @@ def play():
                     print("⏸---Draw by fifty-move rule---⏸")
                     return 'draw'
 
-            def material_insufficiency(board):
-                for row in board:
+            def material_insufficiency(board_test):
+                for row in board_test:
                     for element in row:
                         if element not in [0, 7, -7]:
                             return False
