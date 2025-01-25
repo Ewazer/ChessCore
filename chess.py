@@ -84,9 +84,9 @@ board = []
 def check_repetition():
     serialized_boards = [tuple(tuple(row) for row in board) for board in list_game_board_move]
     counts = Counter(serialized_boards)
-    for serialized_board, count in counts.items():
-        if count >= 3:
-            return True
+    
+    if any(count >= 3 for count in counts.values()): 
+        return True
     return False
 
 def valid_pion_move(move,promotion):
@@ -417,11 +417,11 @@ def board_print(style,color,board_test):
     for row in board_rendu:
         print(row)
 
-def find_piece(board_test,piece):
-    for x in range(len(board_test)):
-        for y in range(len(board_test[x])):
-            if board_test[x][y] == piece:
-                return (y+1,x+1)
+def find_piece(board_test,f_piece):
+    for x, row in enumerate(board_test): 
+        for y, cell in enumerate(row): 
+            if cell == piece:  
+                return (y + 1, x + 1)
 
 def is_check(color,board_actual):
     knight_moves = [(2, 1), (2, -1), (-2, 1), (-2, -1),(1, 2), (1, -2), (-1, 2), (-1, -2)]
