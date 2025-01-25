@@ -420,7 +420,7 @@ def board_print(style,color,board_test):
 def find_piece(board_test,f_piece):
     for x, row in enumerate(board_test): 
         for y, cell in enumerate(row): 
-            if cell == piece:  
+            if cell == f_piece:  
                 return (y + 1, x + 1)
 
 def is_check(color,board_actual):
