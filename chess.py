@@ -1021,11 +1021,6 @@ def play():
                     print("Game move:",list_game_move)
                     return 'pat'
 
-                move = random.choice(list_all_legal_white_move()) if i == 0 else random.choice(list_all_legal_black_move())
-                all_move = f"{coordinate[move[0][1]+1]}{move[0][0]+1} {coordinate[move[1][1]+1]}{move[1][0]+1}"   
-                
-                print(all_move,move)
-                
                 info_move = give_move_info(all_move,debug=None)
                 if info_move == 'illegal':
                     print("🚫---invalide move---🚫")
