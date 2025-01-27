@@ -1,7 +1,6 @@
 import re 
 import copy
 import time
-import random
 from collections import Counter
 
 coordinate = {
