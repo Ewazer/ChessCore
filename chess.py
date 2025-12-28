@@ -979,8 +979,6 @@ def play():
     if board[7][7] != -5:
         rook_m['rook_big_black_castling'] = False
 
-    print(list_all_legal_white_move())
-    print(len(list_all_legal_white_move()))
     print("🌟 Game start 🌟")
     print()
     print("⚪---white play---⚪")
