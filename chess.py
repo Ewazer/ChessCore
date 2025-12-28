@@ -767,65 +767,38 @@ class Chess:
                                 list_all_move.append(m)
         return list_all_move
 
-    def list_all_legal_white_move(self):
+
+    def list_all_legal_move(self, color):
         list_all_move = []
         for y_i in range(0,8):
             for x_i in range(0,8):
-                if self.board[y_i][x_i] != 0:
+                if self.board[y_i][x_i] != 0 and ((color == 'white' and self.board[y_i][x_i] > 0) or (color == 'black' and self.board[y_i][x_i] < 0)):
                     n_move = []
-                    if self.board[y_i][x_i] == 1:
+                    if abs(self.board[y_i][x_i]) == 1:
                         n_move = self.list_pawn_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == 7:
+                    elif abs(self.board[y_i][x_i]) == 7:
                         n_move = self.list_king_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == 9:
+                    elif abs(self.board[y_i][x_i]) == 9:
                         n_move = self.list_queen_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == 5:
+                    elif abs(self.board[y_i][x_i]) == 5:
                         n_move = self.list_rook_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == 4:
+                    elif abs(self.board[y_i][x_i]) == 4:
                         n_move = self.list_bishop_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == 3:
+                    elif abs(self.board[y_i][x_i]) == 3:
                         n_move = self.list_knight_move(y_i,x_i)
                     if n_move:
                         for m in n_move:
                             new_board = copy.deepcopy(self.board)
                             new_board[m[0][0]][m[0][1]] = 0
                             new_board[m[1][0]][m[1][1]] = self.board[y_i][x_i]
-                            if self.is_check('white', new_board) != 'check':
-                                list_all_move.append(m)
-        return list_all_move
-
-    def list_all_legal_black_move(self):
-        list_all_move = []
-        for y_i in range(0,8):
-            for x_i in range(0,8):
-                if self.board[y_i][x_i] != 0:
-                    n_move = []
-                    if self.board[y_i][x_i] == -1:
-                        n_move = self.list_pawn_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == -7:
-                        n_move = self.list_king_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == -9:
-                        n_move = self.list_queen_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == -5:
-                        n_move = self.list_rook_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == -4:
-                        n_move = self.list_bishop_move(y_i,x_i)
-                    elif self.board[y_i][x_i] == -3:
-                        n_move = self.list_knight_move(y_i,x_i)
-                    if n_move:
-                        for m in n_move:
-                            new_board = copy.deepcopy(self.board)
-                            new_board[m[0][0]][m[0][1]] = 0
-                            new_board[m[1][0]][m[1][1]] = self.board[y_i][x_i]
-
-                            if self.is_check('black', new_board) != 'check':
+                            if self.is_check(color, new_board) != 'check':
                                 list_all_move.append(m)
         return list_all_move
 
     def is_checkmate(self, color, board_actual):
         if color in ('black','white'):
             if self.is_check(color, board_actual) == 'check':
-                move = self.list_all_legal_black_move() if color == 'black' else self.list_all_legal_white_move()
+                move = self.list_all_legal_move("black") if color == 'black' else self.list_all_legal_move("white")
                 for m in move:
                     if self.board[m[0][0]][m[0][1]] not in (7,-7) or abs(m[0][1]-m[1][1]) != 2:
                         new_board = copy.deepcopy(board_actual)
@@ -998,8 +971,8 @@ class Chess:
                         else:
                             print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
                     
-                    legal_white_move = self.list_all_legal_white_move()
-                    legal_black_move = self.list_all_legal_black_move()
+                    legal_white_move = self.list_all_legal_move("white")
+                    legal_black_move = self.list_all_legal_move("black")
 
 
                     if legal_white_move == [] and i == 0:
@@ -1076,3 +1049,6 @@ class Chess:
                     print("⚪---white play---⚪")
                     print()
                     self.board_print(True,'white',self.board)    
+
+process = Chess()
+process.play()    
