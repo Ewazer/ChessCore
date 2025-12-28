@@ -1076,6 +1076,3 @@ class Chess:
                     print("⚪---white play---⚪")
                     print()
                     self.board_print(True,'white',self.board)    
-
-process = Chess()
-process.play()    
