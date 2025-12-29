@@ -71,16 +71,7 @@ class Chess:
             -7: "black_king"
         }
 
-        self.castling_p_white = False
-        self.castling_p_black = False
-        self.big_castling_p_white = False
-        self.big_castling_p_black = False
         self.info_move = {}
-        self.rook_m = {}
-        self.list_game_move = []
-        self.list_game_board_move = []
-        self.board = []
-
         self.castling_p_white = True
         self.castling_p_black = True 
         self.big_castling_p_white = True 
@@ -107,8 +98,18 @@ class Chess:
         if any(count >= 3 for count in counts.values()): 
             return True
         return False
+    
+    def promote_pawn(self, color):
+        piece_map = {'Q': 9, 'R': 5, 'B': 4, 'N': 3}
+        if not self.auto_promotion:
+            while True:
+                choice = input("Promotion mode (the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N')> ")
+                if choice in piece_map:
+                    return piece_map[choice] * (1 if color == 'white' else -1)
+        else:
+            return int(self.auto_promotion) * (1 if color == 'white' else -1)
 
-    def valid_pawn_move(self, move, promotion):
+    def valid_pawn_move(self, move):
         if move['end_value'] == 0: 
             if self.list_game_move:
                 if (move['y_start_coordinate'] == 5 if move['start_value'] > 0 else move['y_start_coordinate'] == 3):
@@ -118,69 +119,27 @@ class Chess:
                         if move['x_end_coordinate'] == move['x_start_coordinate']+1:
                             if self.list_game_move[-1] == [[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]]:
                                 return('en passant')
+                            
                         elif move['x_end_coordinate'] == move['x_start_coordinate']-1:
                             if self.list_game_move[-1] == [[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]]:
                                 return('en passant')
+                            
             if move['x_end_coordinate'] == move['x_start_coordinate']: 
                 if move['name_piece_coor1'] == "white_pawn":     
                     if move['y_end_coordinate'] == move['y_start_coordinate'] + 1 or (move['y_end_coordinate'] == move['y_start_coordinate'] + 2 and move['y_start_coordinate'] == 1 and self.board[move['y_start_coordinate'] + 1][move['x_start_coordinate']] == 0):
                         if move['y_end_coordinate'] == 7:
-                            if promotion:
-                                print()
-                                print("----promotion mode 👑----")
-                                while True:
-                                    promotion_piece = input("enter a piece: the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N'> ") 
-                                    print()
-                                    if promotion_piece == 'Q':
-                                        move["start_value"] = 9
-                                        return('valid')
-                                        
-                                    if promotion_piece == 'R':
-                                        move["start_value"] = 5
-                                        return('valid')
-
-                                    if promotion_piece == 'B':
-                                        move["start_value"] = 4
-                                        return('valid')
-
-                                    if promotion_piece == 'N':
-                                        move["start_value"] = 3
-                                        return('valid')
-                            else:
-                                move["start_value"] = 9
-                                return('valid')
+                            move["start_value"] = self.promote_pawn('white')
                         return('valid')
+                    
                     else:
                         return('illegal')
 
                 if move['name_piece_coor1'] == "black_pawn":
                     if move['y_start_coordinate'] == move['y_end_coordinate'] + 1 or (move['y_start_coordinate'] == move['y_end_coordinate'] + 2 and move['y_start_coordinate'] == 6 and self.board[move['y_start_coordinate'] - 1][move['x_start_coordinate']] == 0):
                         if move['y_end_coordinate'] == 0:
-                            if promotion:
-                                print()
-                                print("----promotion mode 👑----")
-                                while True:
-                                    promotion_piece = input("enter a piece: the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N'> ") 
-                                    print()
-                                    if promotion_piece == 'Q':
-                                        move["start_value"] = -9
-                                        return('valid')
-                                        
-                                    if promotion_piece == 'R':
-                                        move["start_value"] = -5
-                                        return('valid')
-
-                                    if promotion_piece == 'B':
-                                        move["start_value"] = -4
-                                        return('valid')
-
-                                    if promotion_piece == 'N':
-                                        move["start_value"] = -3
-                                        return('valid')  
-                            else:
-                                move["start_value"] = -9
-                                return('valid')
+                            move["start_value"] = self.promote_pawn('black')
                         return('valid')
+                    
                     else:
                         return('illegal')
 
@@ -195,31 +154,9 @@ class Chess:
                     return('illegal')
                 if (move['x_end_coordinate'] == move['x_start_coordinate'] + 1 or move['x_end_coordinate'] == move['x_start_coordinate'] - 1) and move['y_end_coordinate'] == move['y_start_coordinate'] + 1:
                         if move['y_end_coordinate'] == 7:
-                            if promotion:
-                                print()
-                                print("----promotion mode 👑----")
-                                while True:
-                                    promotion_piece = input("enter a piece: the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N'> ") 
-                                    print()
-                                    if promotion_piece == 'Q':
-                                        move["start_value"] = 9
-                                        return('valid')
-                                        
-                                    if promotion_piece == 'R':
-                                        move["start_value"] = 5
-                                        return('valid')
-
-                                    if promotion_piece == 'B':
-                                        move["start_value"] = 4
-                                        return('valid')
-
-                                    if promotion_piece == 'N':
-                                        move["start_value"] = 3
-                                        return('valid')
-                            else:
-                                move["start_value"] = 9
-                                return('valid')
+                            move["start_value"] = self.promote_pawn('white')
                         return('valid')
+                
                 else:
                     return('illegal')
 
@@ -229,33 +166,12 @@ class Chess:
                     return('illegal')
                 if (move['x_end_coordinate'] == move['x_start_coordinate'] + 1 or move['x_end_coordinate'] == move['x_start_coordinate'] - 1) and move['y_end_coordinate'] == move['y_start_coordinate'] - 1:
                     if move['y_end_coordinate'] == 0:
-                        if promotion:
-                            print()
-                            print("----promotion mode 👑----")
-                            while True:
-                                promotion_piece = input("enter a piece: the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N'> ") 
-                                print()
-                                if promotion_piece == 'Q':
-                                    move["start_value"] = -9
-                                    return('valid')
-                                    
-                                if promotion_piece == 'R':
-                                    move["start_value"] = -5
-                                    return('valid')
-
-                                if promotion_piece == 'B':
-                                    move["start_value"] = -4
-                                    return('valid')
-
-                                if promotion_piece == 'N':
-                                    move["start_value"] = -3
-                                    return('valid')  
-                        else:
-                            move["start_value"] = -9
-                            return('valid')
+                        move["start_value"] = self.promote_pawn('black')
                     return('valid')
+                
                 else:
                     return('illegal')
+                
             return
 
     def valid_bishop_move(self, move):
@@ -740,34 +656,6 @@ class Chess:
                     list_k_move.append([[y,x],[y,x+2]])
         return list_k_move
 
-    def list_all_legal_move(self):
-        list_all_move = []
-        for y_i in range(0,8):
-            for x_i in range(0,8):
-                if self.board[y_i][x_i] != 0:
-                    n_move = []
-                    if self.board[y_i][x_i] in (1,-1):
-                        n_move = self.list_pawn_move(y_i,x_i)
-                    elif self.board[y_i][x_i] in (7,-7):
-                        n_move = self.list_king_move(y_i,x_i)
-                    elif self.board[y_i][x_i] in (9,-9):
-                        n_move = self.list_queen_move(y_i,x_i)
-                    elif self.board[y_i][x_i] in (5,-5):
-                        n_move = self.list_rook_move(y_i,x_i)
-                    elif self.board[y_i][x_i] in (4,-4):
-                        n_move = self.list_bishop_move(y_i,x_i)
-                    elif self.board[y_i][x_i] in (3,-3):
-                        n_move = self.list_knight_move(y_i,x_i)
-                    if n_move:
-                        for m in n_move:
-                            new_board = copy.deepcopy(self.board)
-                            new_board[m[0][0]][m[0][1]] = 0
-                            new_board[m[1][0]][m[1][1]] = self.board[y_i][x_i]
-                            if self.is_check('white' if self.board[y_i][x_i] > 0 else 'black', new_board) != 'check':
-                                list_all_move.append(m)
-        return list_all_move
-
-
     def list_all_legal_move(self, color):
         list_all_move = []
         for y_i in range(0,8):
@@ -829,7 +717,7 @@ class Chess:
                 return
 
         if self.info_move["start_value"] == 1 or self.info_move["start_value"] == -1:
-            result_valid_pion = self.valid_pawn_move(self.info_move,False)
+            result_valid_pion = self.valid_pawn_move(self.info_move)
             if result_valid_pion not in {'valid', 'en passant'}:
                 print("🚫---invalid move---🚫")
                 return
@@ -928,7 +816,7 @@ class Chess:
         self.list_game_board_move.append(self.board)
         return 'valid'
 
-    def play(self, color="white"):
+    def play(self, color="white", auto_promotion = "9"):
         if self.board[0][3] != 7:
             self.castling_p_white = False
             self.big_castling_p_white = False
@@ -943,6 +831,8 @@ class Chess:
             self.rook_m['rook_black_castling'] = False
         if self.board[7][7] != -5:
             self.rook_m['rook_big_black_castling'] = False
+
+        self.auto_promotion = auto_promotion
         
         print("🌟 Game start 🌟")
         if color == "white":
@@ -1050,5 +940,6 @@ class Chess:
                     print()
                     self.board_print(True,'white',self.board)    
 
-process = Chess()
-process.play()    
+if __name__ == "__main__":
+    process = Chess()
+    process.play(auto_promotion=False)    
