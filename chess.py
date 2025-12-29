@@ -831,13 +831,39 @@ class Chess:
         result_valid_king = None
         result_valid_pion = None
 
-        if self.is_checkmate(color='black',board_actual=self.board):
-            print("✅---checkmate white win---✅")
-            return 'checkmate'
-        
-        if self.is_checkmate(color='white',board_actual=self.board):
-            print("✅---checkmate black win---✅")
-            return 'checkmate'
+        if not self.list_game_move:
+            if self.is_checkmate(color='black',board_actual=self.board):
+                print()
+                print("╚════════ CHECKMATE WHITE WIN ═════════╝")
+                return 'checkmate'
+            
+            if self.is_checkmate(color='white',board_actual=self.board):
+                print()
+                print("╚════════ CHECKMATE BLACK WIN ═════════╝")
+                return 'checkmate'
+            
+            legal_move = self.list_all_legal_move("white") if self.color_turn == "black" else self.list_all_legal_move("black")      
+
+            if legal_move == [] and self.color_turn == "black":
+                print("════════════════════════════════════════")
+                print()
+                self.board_print(True,'white',self.board)
+                self.list_game_move.append(self.board)
+                self.list_game_board_move.append([[self.info_move['y_start_coordinate'], self.info_move['x_start_coordinate']],[self.info_move['y_end_coordinate'], self.info_move['x_end_coordinate']]])
+                print()
+                print("⏸ ═════════ Whites are pat ══════════ ⏸")
+                return 'pat'
+            
+            if legal_move == [] and self.color_turn == "white":
+                print("════════════════════════════════════════")
+                print()
+                self.board_print(True,'black',self.board)
+                self.list_game_move.append([[self.info_move['y_start_coordinate'], self.info_move['x_start_coordinate']],[self.info_move['y_end_coordinate'], self.info_move['x_end_coordinate']]])
+                self.list_game_board_move.append(self.board)
+                print()
+                print("⏸ ═════════ Blacks are pat ══════════ ⏸")
+                return 'pat'
+            
         
         if self.info_move["start_value"] > 0:
             if self.is_check('black',self.board) != 'valid':
@@ -1004,14 +1030,12 @@ class Chess:
         else:
             rep = self.validate_and_apply_move()
 
-
-        if rep == 'checkmate':
+        if rep == 'checkmate' or rep == 'pat':
             return 'checkmate'
         
-        legal_white_move = self.list_all_legal_move("white")
-        legal_black_move = self.list_all_legal_move("black")      
+        legal_move = self.list_all_legal_move("white") if self.color_turn == "black" else self.list_all_legal_move("black")      
 
-        if legal_white_move == [] and self.color_turn == "black":
+        if legal_move == [] and self.color_turn == "black":
             print("════════════════════════════════════════")
             print()
             self.board_print(True,'white',self.board)
@@ -1021,7 +1045,7 @@ class Chess:
             print("⏸ ═════════ Whites are pat ══════════ ⏸")
             return 'pat'
         
-        if legal_black_move == [] and self.color_turn == "white":
+        if legal_move == [] and self.color_turn == "white":
             print("════════════════════════════════════════")
             print()
             self.board_print(True,'black',self.board)
@@ -1228,4 +1252,4 @@ class Chess:
 
 if __name__ == "__main__":
     process = Chess()
-    process.play(auto_promotion=False)  
+    process.play(auto_promotion=False)    
