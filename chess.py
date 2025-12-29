@@ -91,13 +91,16 @@ class Chess:
             [-5,-3,-4,-7,-9,-4,-3,-5]
         ]
 
+
     def check_repetition(self):
         serialized_boards = [tuple(tuple(row) for row in board) for board in self.list_game_board_move]
         counts = Counter(serialized_boards)
         
         if any(count >= 3 for count in counts.values()): 
             return True
+        
         return False
+    
     
     def promote_pawn(self, color):
         piece_map = {'Q': 9, 'R': 5, 'B': 4, 'N': 3}
@@ -106,16 +109,16 @@ class Chess:
                 choice = input("Promotion mode (the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N')> ")
                 if choice in piece_map:
                     return piece_map[choice] * (1 if color == 'white' else -1)
+                
         else:
             return int(self.auto_promotion) * (1 if color == 'white' else -1)
+        
 
     def valid_pawn_move(self, move):
         if move['end_value'] == 0: 
             if self.list_game_move:
-                if (move['y_start_coordinate'] == 5 if move['start_value'] > 0 else move['y_start_coordinate'] == 3):
+                if (move['y_start_coordinate'] == 4 if move['start_value'] > 0 else move['y_start_coordinate'] == 3):
                     if self.board[move['y_start_coordinate']][move['x_end_coordinate']] == (-1 if move['start_value'] > 0 else 1):
-                        print(self.list_game_move[-1])
-                        print([[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]])
                         if move['x_end_coordinate'] == move['x_start_coordinate']+1:
                             if self.list_game_move[-1] == [[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]]:
                                 return('en passant')
@@ -145,6 +148,7 @@ class Chess:
 
                 if move['name_piece_coor1'] != "black_pawn" and move['name_piece_coor1'] != "white_pawn":
                     return('illegal')
+                
             else: 
                 return('illegal')
 
@@ -172,10 +176,11 @@ class Chess:
                 else:
                     return('illegal')
                 
-            return
+            return('illegal')
+        
 
     def valid_bishop_move(self, move):
-        if (move['name_piece_coor1'] in ('black_bishop,black_queen') and move['end_value'] < 0) or(move['name_piece_coor1'] in ('white_bishop','white_queen') and move['end_value'] > 0):
+        if (move['name_piece_coor1'] in ('black_bishop','black_queen') and move['end_value'] < 0) or(move['name_piece_coor1'] in ('white_bishop','white_queen') and move['end_value'] > 0):
             return('illegal')
         
         if abs(move['x_start_coordinate'] - move['x_end_coordinate']) == abs(move['y_start_coordinate'] - move['y_end_coordinate']):
@@ -191,12 +196,15 @@ class Chess:
             while x_start_coordinate != move['x_end_coordinate']:
                 if self.board[y_start_coordinate][x_start_coordinate] != 0:
                         return('illegal')
+                
                 x_start_coordinate += x
                 y_start_coordinate += y
                     
             return('valid')
+        
         else:
             return('illegal')
+        
 
     def valid_rook_move(self, move, debug=None):
         if move['end_value'] == 0 or (move['end_value'] < 0 and move['start_value'] > 0) or (move['end_value'] > 0 and move['start_value'] < 0):
@@ -204,6 +212,7 @@ class Chess:
                 for i in range(min(move['x_start_coordinate'], move['x_end_coordinate']), max(move['x_start_coordinate'], move['x_end_coordinate'])):
                     if self.board[move['y_start_coordinate']][i] != 0 and [i] != [move['x_start_coordinate']] and [i] != [move['x_end_coordinate']]:
                         return('illegal')
+                    
                 if move['start_value'] == 5:
                     if move['x_start_coordinate'] == 0 and move['y_start_coordinate'] == 0:
                         self.rook_m['rook_white_castling'] = False
@@ -215,10 +224,12 @@ class Chess:
                     elif move['x_start_coordinate'] == 7 and move['y_start_coordinate'] == 7:
                         self.rook_m['rook_big_black_castling'] = False
                 return('valid')
+            
             elif move['x_start_coordinate'] == move['x_end_coordinate']:
                 for i in range(min(move['y_start_coordinate'], move['y_end_coordinate']), max(move['y_start_coordinate'], move['y_end_coordinate'])):
                     if self.board[i][move['x_start_coordinate']] != 0 and [i] != [move['y_start_coordinate']] and [i] != [move['y_end_coordinate']]:
                         return('illegal')
+                    
                 if move['start_value'] == 5:
                     if move['x_start_coordinate'] == 0 and move['y_start_coordinate'] == 0:
                         self.rook_m['rook_big_white_castling'] = False
@@ -230,16 +241,21 @@ class Chess:
                     elif move['x_start_coordinate'] == 7 and move['y_start_coordinate'] == 7:
                         self.rook_m['rook_black_castling'] = False
                 return('valid')
+            
         return 'illegal'
+    
 
     def valid_knight_move(self, move):
         if move['end_value'] == 0 or ((move['end_value'] > 0 and move['start_value'] < 0) or (move['end_value'] < 0 and move['start_value'] > 0)): 
             if abs(move['x_start_coordinate'] - move['x_end_coordinate']) == 2 and abs(move['y_start_coordinate'] - move['y_end_coordinate']) == 1:
                 return('valid')
+            
             elif abs(move['x_start_coordinate'] - move['x_end_coordinate']) == 1 and abs(move['y_start_coordinate'] - move['y_end_coordinate']) == 2:
                 return('valid')
+            
         else:
             return('illegal')
+        
 
     def valid_king_move(self, move, castling_white=False, castling_black=False,big_castling_black=False,big_castling_white=False):
         if move['end_value'] == 0 and (castling_white if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else castling_black) and abs(move['x_start_coordinate'] - move['x_end_coordinate']) == 2 and abs(move['y_start_coordinate'] - move['y_end_coordinate']) == 0 and self.board[move['y_end_coordinate']][move['x_end_coordinate']-1] in (-5,5):
@@ -251,6 +267,7 @@ class Chess:
                     if self.is_check(('white' if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else 'black'), new_board) != 'check':
                         if (self.rook_m['rook_white_castling'] == True if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else self.rook_m['rook_black_castling'] == True):
                             return 'casting'
+                        
         elif move['end_value'] == 0 and (big_castling_white if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else big_castling_black) and abs(move['x_start_coordinate'] - move['x_end_coordinate']) == 2 and abs(move['y_start_coordinate'] - move['y_end_coordinate']) == 0 and self.board[move['y_end_coordinate']][move['x_end_coordinate']+2] in (-5,5):
             if self.is_check(('white' if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else 'black'),self.board) != 'check':
                 if self.board[move['y_end_coordinate']][move['x_end_coordinate']+1] == 0 and self.board[move['y_end_coordinate']][move['x_end_coordinate']-1] == 0:
@@ -260,13 +277,17 @@ class Chess:
                     if self.is_check(('white' if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else 'black'), new_board) != 'check':
                         if (self.rook_m['rook_big_white_castling'] == True if self.board[self.info_move["y_start_coordinate"]][self.info_move["x_start_coordinate"]] > 0 else self.rook_m['rook_big_black_castling'] == True):
                             return 'big_casting'
+                        
         if move['end_value'] == 0 or ((move['end_value'] < 0 and move['start_value'] > 0) or (move['end_value'] > 0 and move['start_value'] < 0)): 
             if abs(move['x_start_coordinate'] - move['x_end_coordinate']) <= 1 and abs(move['y_start_coordinate'] - move['y_end_coordinate']) <= 1:
                 return('valid')
+            
             else:
                 return('illegal')
+            
         else:
             return('illegal')
+        
 
     def give_move_info(self, all_move,debug=None):
         try:
@@ -332,14 +353,18 @@ class Chess:
             }
 
             return(move)
+        
         except:
             return('illegal')
+        
 
     def valid_queen_move(self, move):
         if self.valid_rook_move(move) == 'valid' or self.valid_bishop_move(move) == 'valid':
             return('valid')
+        
         else:
             return('illegal')
+        
 
     def board_print(self, style,color,board_test):
         if style:
@@ -350,12 +375,15 @@ class Chess:
             board_rendu.reverse()
         for row in board_rendu:
             print(row)
+        return 
+
 
     def find_piece(self, board_test,f_piece):
         for x, row in enumerate(board_test): 
             for y, cell in enumerate(row): 
                 if cell == f_piece:  
                     return (y + 1, x + 1)
+
 
     def is_check(self, color,board_actual):
         knight_moves = [(2, 1), (2, -1), (-2, 1), (-2, -1),(1, 2), (1, -2), (-1, 2), (-1, -2)]
@@ -370,22 +398,28 @@ class Chess:
             for i in range(white_king_position[0]-1,8):
                 if board_actual[white_king_position[1]-1][i] in (-5,-9):
                     return 'check'
+                
                 if board_actual[white_king_position[1]-1][i] not in (0,7):
                     break
+
             for i in range(white_king_position[0]-1, -1, -1):
                 if board_actual[white_king_position[1]-1][i] in (-5,-9):
                     return 'check'
+                
                 if board_actual[white_king_position[1]-1][i] not in (0,7):
                     break
 
             for i in range(white_king_position[1]-1,8):
                 if board_actual[i][white_king_position[0]-1] in (-5,-9):
                     return 'check'
+                
                 if board_actual[i][white_king_position[0]-1] not in (0,7):
                     break
+
             for i in range(white_king_position[1]-1, -1, -1):
                 if board_actual[i][white_king_position[0]-1] in (-5,-9):
                     return 'check'
+                
                 if board_actual[i][white_king_position[0]-1] not in (0,7):
                     break
             
@@ -394,8 +428,10 @@ class Chess:
             while y <= 7 and x <= 7:
                 if board_actual[y][x] in (-4,-9):
                     return 'check'
+                
                 if board_actual[y][x] not in (0,7):
                     break
+
                 y += 1
                 x += 1
 
@@ -404,8 +440,10 @@ class Chess:
             while y >= 0 and x >= 0:
                 if board_actual[y][x] in (-4,-9):
                     return 'check'
+                
                 if board_actual[y][x] not in (0,7):
                     break
+
                 y -= 1
                 x -= 1
 
@@ -414,8 +452,10 @@ class Chess:
             while y <= 7 and x >= 0:
                 if board_actual[y][x] in (-4,-9):
                     return 'check'
+                
                 if board_actual[y][x] not in (0,7):
                     break
+
                 y += 1
                 x -= 1
             
@@ -424,8 +464,10 @@ class Chess:
             while y >= 0 and x <= 7:
                 if board_actual[y][x] in (-4,-9):
                     return 'check'
+                
                 if board_actual[y][x] not in (0,7):
                     break
+
                 y -= 1
                 x += 1
             
@@ -436,12 +478,12 @@ class Chess:
                     if board_actual[y][x] == -3:
                         return 'check'
             
-
             y = white_king_position[1]
             x = white_king_position[0] 
             if y >= 0 and y <= 7 and x >= 0 and x <= 7:
                 if board_actual[y][x] == -1:
                     return 'check'
+                
             x = white_king_position[0] - 2
             if y >= 0 and y <= 7 and x >= 0 and x <= 7:
                 if board_actual[y][x] == -1:
@@ -470,22 +512,28 @@ class Chess:
             for i in range(black_king_position[0]-1,8):
                 if board_actual[black_king_position[1]-1][i] in (5,9):
                     return 'check'
+                
                 if board_actual[black_king_position[1]-1][i] not in (-0,-7):
                     break
+
             for i in range(black_king_position[0]-1, -1, -1):
                 if board_actual[black_king_position[1]-1][i] in (5,9):
                     return 'check'
+                
                 if board_actual[black_king_position[1]-1][i] not in (-0,-7):
                     break
 
             for i in range(black_king_position[1]-1,8):
                 if board_actual[i][black_king_position[0]-1] in (5,9):
                     return 'check'
+                
                 if board_actual[i][black_king_position[0]-1] not in (-0,-7):
                     break
+
             for i in range(black_king_position[1]-1, -1, -1):
                 if board_actual[i][black_king_position[0]-1] in (5,9):
                     return 'check'
+                
                 if board_actual[i][black_king_position[0]-1] not in (-0,-7):
                     break
 
@@ -494,8 +542,10 @@ class Chess:
             while y <= 7 and x <= 7:
                 if board_actual[y][x] in (4,9):
                     return 'check'
+                
                 if board_actual[y][x] not in (-0,-7):
                     break
+
                 y += 1
                 x += 1
 
@@ -504,8 +554,10 @@ class Chess:
             while y >= 0 and x >= 0:
                 if board_actual[y][x] in (4,9):
                     return 'check'
+                
                 if board_actual[y][x] not in (-0,-7):
                     break
+
                 y -= 1
                 x -= 1
 
@@ -514,8 +566,10 @@ class Chess:
             while y <= 7 and x >= 0:
                 if board_actual[y][x] in (4,9):
                     return 'check'
+                
                 if board_actual[y][x] not in (-0,-7):
                     break
+
                 y += 1
                 x -= 1
             
@@ -524,8 +578,10 @@ class Chess:
             while y >= 0 and x <= 7:
                 if board_actual[y][x] in (4,9):
                     return 'check'
+                
                 if board_actual[y][x] not in (-0,-7):
                     break
+
                 y -= 1
                 x += 1
 
@@ -541,6 +597,7 @@ class Chess:
             if y >= 0 and y <= 7 and x >= 0 and x <= 7:
                 if board_actual[y][x] == 1:
                     return 'check'
+                
             x = black_king_position[0] - 2
             if y >= 0 and y <= 7 and x >= 0 and x <= 7:
                 if board_actual[y][x] == 1:
@@ -555,40 +612,48 @@ class Chess:
                     x_c = x + e[1]
                     if y_c >= 0 and y_c <= 7 and x_c >= 0 and x_c <= 7 and board_actual[y_c][x_c] in (7,-7):
                         return 'check'
-        
                 
             return 'valid'
+        
         else:
             exit('error color')
+
 
     def list_pawn_move(self, y,x):
         list_p_move = []
         direction = 1 if self.board[y][x] == 1 else -1 
+
         if self.board[y + direction][x] == 0:
             list_p_move.append([[y,x],[y + direction, x]])
             if (y == 1 and direction == 1) or (y == 6 and direction == -1):
                 if self.board[y + 2 * direction][x] == 0:
                     list_p_move.append([[y,x],[y + 2 * direction, x]])
+
         if x + 1 <= 7 and self.board[y + direction][x + 1] * self.board[y][x] < 0:
             list_p_move.append([[y,x],[y + direction, x + 1]])
+
         if x - 1 >= 0 and self.board[y + direction][x - 1] * self.board[y][x] < 0: 
             list_p_move.append([[y,x],[y + direction, x - 1]])
         
         return list_p_move
+    
 
     def list_knight_move(self, y,x):
         list_k_move = []
         knight_moves = [(2, 1), (2, -1), (-2, 1), (-2, -1),(1, 2), (1, -2), (-1, 2), (-1, -2)]
+
         if self.board[y][x] in (3,-3):
             for e in knight_moves:
                 if y+e[0] >= 0 and y+e[0] <= 7 and x+e[1] >= 0 and x+e[1] <= 7:
                     if (self.board[y+e[0]][x+e[1]] <= 0 if self.board[y][x] == 3 else self.board[y+e[0]][x+e[1]] >= 0):
                         list_k_move.append([[y,x],[y+e[0],x+e[1]]])
         return list_k_move
+    
 
     def list_bishop_move(self, y,x):
         list_b_move = []
         bishop_move = [(1,1),(-1,1),(-1,-1),(1,-1)]
+
         if self.board[y][x] in (4,-4):
             for e in bishop_move:
                 y_c = y + e[0]
@@ -599,11 +664,14 @@ class Chess:
                     x_c = x_c + e[1]
                 if y_c >= 0 and y_c <= 7 and x_c >= 0 and x_c <= 7 and (self.board[y_c][x_c] < 0 if self.board[y][x] == 4 else self.board[y_c][x_c] > 0):
                     list_b_move.append([[y,x],[y_c,x_c]])
+
         return list_b_move
+    
 
     def list_rook_move(self, y,x):
         list_r_move = []
         rook_move = [(0,1),(0,-1),(-1,0),(1,0)]
+
         if self.board[y][x] in (5,-5):
             for e in rook_move:
                 y_c = y + e[0]
@@ -613,12 +681,15 @@ class Chess:
                     y_c = y_c + e[0]
                     x_c = x_c + e[1]
                 if y_c >= 0 and y_c <= 7 and x_c >= 0 and x_c <= 7 and (self.board[y_c][x_c] < 0 if self.board[y][x] == 5 else self.board[y_c][x_c] > 0):
-                    list_r_move.append([[y,x],[y_c,x_c]])       
+                    list_r_move.append([[y,x],[y_c,x_c]])     
+
         return list_r_move
+    
 
     def list_queen_move(self, y,x):
         list_q_move = []
         queen_move = [(1,1),(-1,1),(-1,-1),(1,-1),(0,1),(0,-1),(-1,0),(1,0)]
+
         if self.board[y][x] in (9,-9):
             for e in queen_move:
                 y_c = y + e[0]
@@ -628,18 +699,22 @@ class Chess:
                     y_c = y_c + e[0]
                     x_c = x_c + e[1]
                 if y_c >= 0 and y_c <= 7 and x_c >= 0 and x_c <= 7 and (self.board[y_c][x_c] < 0 if self.board[y][x] == 9 else self.board[y_c][x_c] > 0):
-                    list_q_move.append([[y,x],[y_c,x_c]])       
+                    list_q_move.append([[y,x],[y_c,x_c]])    
+
         return list_q_move
+    
 
     def list_king_move(self, y,x):
         list_k_move = []
         king_move = [(1,1),(-1,1),(-1,-1),(1,-1),(0,1),(0,-1),(-1,0),(1,0)]
+
         if self.board[y][x] in (7,-7):
             for e in king_move:
                 y_c = y + e[0]
                 x_c = x + e[1]
                 if y_c >= 0 and y_c <= 7 and x_c >= 0 and x_c <= 7 and (self.board[y_c][x_c] >= 0 if self.board[y][x] == -7 else self.board[y_c][x_c] <= 0):
                     list_k_move.append([[y,x],[y_c,x_c]])
+
         if (self.castling_p_white if self.board[y][x] > 0 else self.castling_p_black) and (self.rook_m['rook_white_castling'] if self.board[y][x] > 0 else self.rook_m['rook_black_castling']) and self.board[y][x] > 0:
             if self.board[y][x-1] == 0 and self.board[y][x-2] == 0:
                 new_board = copy.deepcopy(self.board)
@@ -647,6 +722,7 @@ class Chess:
                 new_board[y][x] = 0
                 if self.is_check('white' if self.board[y][x] > 0 else 'black', new_board) != 'check':
                     list_k_move.append([[y,x],[y,x-2]])
+
         elif (self.big_castling_p_white if self.board[y][x] > 0 else self.big_castling_p_black) and (self.rook_m['rook_big_white_castling'] if self.board[y][x] > 0 else self.rook_m['rook_big_black_castling']) and self.board[y][x] > 0:
             if self.board[y][x+1] == 0 and self.board[y][x+2] == 0 and self.board[y][x+3] == 0:
                 new_board = copy.deepcopy(self.board)
@@ -654,10 +730,13 @@ class Chess:
                 new_board[y][x] = 0
                 if self.is_check('white' if self.board[y][x] > 0 else 'black', new_board) != 'check':
                     list_k_move.append([[y,x],[y,x+2]])
+
         return list_k_move
+
 
     def list_all_legal_move(self, color):
         list_all_move = []
+
         for y_i in range(0,8):
             for x_i in range(0,8):
                 if self.board[y_i][x_i] != 0 and ((color == 'white' and self.board[y_i][x_i] > 0) or (color == 'black' and self.board[y_i][x_i] < 0)):
@@ -681,7 +760,9 @@ class Chess:
                             new_board[m[1][0]][m[1][1]] = self.board[y_i][x_i]
                             if self.is_check(color, new_board) != 'check':
                                 list_all_move.append(m)
+                
         return list_all_move
+
 
     def is_checkmate(self, color, board_actual):
         if color in ('black','white'):
@@ -694,8 +775,11 @@ class Chess:
                         new_board[m[1][0]][m[1][1]] = board_actual[m[0][0]][m[0][1]]
                         if self.is_check(color, new_board) != 'check':
                             return False
+                        
                 return True
+            
         return False
+
 
     def play_move(self):
         result_valid_king = None
@@ -704,9 +788,11 @@ class Chess:
         if self.is_checkmate(color='black',board_actual=self.board):
             print("✅---checkmate white win---✅")
             return 'checkmate'
+        
         if self.is_checkmate(color='white',board_actual=self.board):
             print("✅---checkmate black win---✅")
             return 'checkmate'
+        
         if self.info_move["start_value"] > 0:
             if self.is_check('black',self.board) != 'valid':
                 print("🚫---invalid move black is in check---🚫")
