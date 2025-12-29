@@ -91,6 +91,8 @@ class Chess:
             [-5,-3,-4,-7,-9,-4,-3,-5]
         ]
 
+        self.party_over = False
+
 
     def check_repetition(self):
         serialized_boards = [tuple(tuple(row) for row in board) for board in self.list_game_board_move]
@@ -825,6 +827,42 @@ class Chess:
                 return True
             
         return False
+    
+
+    def launch_partie(self, color="white", auto_promotion = "9"):
+        if self.board[0][3] != 7:
+            self.castling_p_white = False
+            self.big_castling_p_white = False
+        if self.board[0][0] != 5:
+            self.rook_m['rook_white_castling'] = False
+        if self.board[0][7] != 5:
+            self.rook_m['rook_big_white_castling'] = False
+        if self.board[7][3] != -7:
+            self.castling_p_black = False
+            self.big_castling_p_black = False
+        if self.board[7][0] != -5:
+            self.rook_m['rook_black_castling'] = False
+        if self.board[7][7] != -5:
+            self.rook_m['rook_big_black_castling'] = False
+
+        self.auto_promotion = auto_promotion
+        self.color_turn = color
+
+        print("\033[1;33m╔═════════════ GAME START ═════════════╗")
+
+        if color == "white":
+            print()
+            print("⚪ ═══════════ White play ═══════════ ⚪")
+            print()
+
+            self.board_print(True,'white',self.board)
+        else:
+            print()
+            print("⚫ ═══════════ Black play ═══════════ ⚫")
+            print()
+
+            self.board_print(True,'black',self.board)
+        return
 
 
     def validate_and_apply_move(self):
@@ -862,8 +900,7 @@ class Chess:
                 self.list_game_board_move.append(self.board)
                 print()
                 print("⏸ ═════════ Blacks are pat ══════════ ⏸")
-                return 'pat'
-            
+                return 'pat'          
         
         if self.info_move["start_value"] > 0:
             if self.is_check('black',self.board) != 'valid':
@@ -975,45 +1012,15 @@ class Chess:
         self.list_game_move.append([[self.info_move['y_start_coordinate'], self.info_move['x_start_coordinate']],[self.info_move['y_end_coordinate'], self.info_move['x_end_coordinate']]])
         self.list_game_board_move.append(self.board)
         return 'valid'
-    
-
-    def launch_partie(self, color="white", auto_promotion = "9"):
-        if self.board[0][3] != 7:
-            self.castling_p_white = False
-            self.big_castling_p_white = False
-        if self.board[0][0] != 5:
-            self.rook_m['rook_white_castling'] = False
-        if self.board[0][7] != 5:
-            self.rook_m['rook_big_white_castling'] = False
-        if self.board[7][3] != -7:
-            self.castling_p_black = False
-            self.big_castling_p_black = False
-        if self.board[7][0] != -5:
-            self.rook_m['rook_black_castling'] = False
-        if self.board[7][7] != -5:
-            self.rook_m['rook_big_black_castling'] = False
-
-        self.auto_promotion = auto_promotion
-        self.color_turn = color
-
-        print("\033[1;32m╔═════════════ GAME START ═════════════╗")
-
-        if color == "white":
-            print()
-            print("⚪ ═══════════ White play ═══════════ ⚪")
-            print()
-
-            self.board_print(True,'white',self.board)
-        else:
-            print()
-            print("⚫ ═══════════ Black play ═══════════ ⚫")
-            print()
-
-            self.board_print(True,'black',self.board)
 
 
-    def play_move(self, all_move):
-        print(f"> {all_move}")
+    def play_move(self, all_move, print_move=True):
+        if self.party_over:
+            print("🚫 ═══════ the game is over ═══════ 🚫")
+            return 'illegal'
+        
+        if print_move:
+            print(f"> {all_move}")
         if not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
             print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
             return 'illegal'
@@ -1031,6 +1038,7 @@ class Chess:
             rep = self.validate_and_apply_move()
 
         if rep == 'checkmate' or rep == 'pat':
+            self.party_over = True
             return 'checkmate'
         
         legal_move = self.list_all_legal_move("white") if self.color_turn == "black" else self.list_all_legal_move("black")      
@@ -1043,6 +1051,7 @@ class Chess:
             self.list_game_board_move.append([[self.info_move['y_start_coordinate'], self.info_move['x_start_coordinate']],[self.info_move['y_end_coordinate'], self.info_move['x_end_coordinate']]])
             print()
             print("⏸ ═════════ Whites are pat ══════════ ⏸")
+            self.party_over = True
             return 'pat'
         
         if legal_move == [] and self.color_turn == "white":
@@ -1053,6 +1062,7 @@ class Chess:
             self.list_game_board_move.append(self.board)
             print()
             print("⏸ ═════════ Blacks are pat ══════════ ⏸")
+            self.party_over = True
             return 'pat'
         
         if self.check_repetition():
@@ -1064,6 +1074,7 @@ class Chess:
                 self.board_print(True,'black',self.board)
             print()
             print("⏸ ═══════ Draw by repetition ═══════ ⏸")
+            self.party_over = True
             return 'draw'
         
         if len(self.list_game_move) >= 50:
@@ -1078,6 +1089,7 @@ class Chess:
                     self.board_print(True,'black',self.board)
                 print()
                 print("⏸ ═════ Draw by fifty-move rule ════ ⏸")
+                self.party_over = True
                 return 'draw'
             
         def material_insufficiency(board_test):
@@ -1096,6 +1108,7 @@ class Chess:
                 self.board_print(True,'black',self.board)
             print()
             print("⏸ ══ Draw by insufficient material ═ ⏸")
+            self.party_over = True
             return 'draw'
             
         if self.color_turn == "white":
@@ -1115,140 +1128,20 @@ class Chess:
     
 
     def play(self, color="white", auto_promotion = "9"):
-        if self.board[0][3] != 7:
-            self.castling_p_white = False
-            self.big_castling_p_white = False
-        if self.board[0][0] != 5:
-            self.rook_m['rook_white_castling'] = False
-        if self.board[0][7] != 5:
-            self.rook_m['rook_big_white_castling'] = False
-        if self.board[7][3] != -7:
-            self.castling_p_black = False
-            self.big_castling_p_black = False
-        if self.board[7][0] != -5:
-            self.rook_m['rook_black_castling'] = False
-        if self.board[7][7] != -5:
-            self.rook_m['rook_big_black_castling'] = False
-
-        self.auto_promotion = auto_promotion
+        self.launch_partie(color=color, auto_promotion=auto_promotion)
         
-        print("\033[1;32m╔═════════════ GAME START ═════════════╗")
-        
-        if color == "white":
-            print()
-            print("⚪ ═══════════ White play ═══════════ ⚪")
-            print()
-
-            self.board_print(True,'white',self.board)
-        else:
-            print()
-            print("⚫ ═══════════ Black play ═══════════ ⚫")
-            print()
-
-            self.board_print(True,'black',self.board)
-
         while True:
-            for i in range(0,2):
-                rep = None
-                while rep != 'valid':
-                    while True:
-                        print()
-                        all_move = input(">")
-                        print()
-                        if bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
-                            break
-                        else:
-                            print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
-                    
-                    legal_white_move = self.list_all_legal_move("white")
-                    legal_black_move = self.list_all_legal_move("black")
-
-
-                    if legal_white_move == [] and i == 0:
-                        print("════════════════════════════════════════")
-                        print()
-                        self.board_print(True,'white',self.board)
-                        self.list_game_move.append(self.board)
-                        self.list_game_board_move.append([[self.info_move['y_start_coordinate'], self.info_move['x_start_coordinate']],[self.info_move['y_end_coordinate'], self.info_move['x_end_coordinate']]])
-                        print()
-                        print("⏸ ═════════ Whites are pat ══════════ ⏸")
-                        return 'pat'
-                    if legal_black_move == [] and i == 1:
-                        print("════════════════════════════════════════")
-                        print()
-                        self.board_print(True,'black',self.board)
-                        self.list_game_move.append([[self.info_move['y_start_coordinate'], self.info_move['x_start_coordinate']],[self.info_move['y_end_coordinate'], self.info_move['x_end_coordinate']]])
-                        self.list_game_board_move.append(self.board)
-                        print()
-                        print("⏸ ═════════ Blacks are pat ══════════ ⏸")
-                        return 'pat'
-
-                    self.info_move = self.give_move_info(all_move,debug=None)
-
-                    if self.info_move == 'illegal':
-                        print("🚫 ══════════ Invalid move ════════ 🚫")
-                    elif (self.info_move['start_value'] > 0 and i == 1) or (self.info_move['start_value'] < 0 and i == 0):
-                        print("🚫 ══════ It's not your turn ══════ 🚫")
-                    else:
-                        rep = self.validate_and_apply_move()
-
-                    if rep == 'checkmate':
-                        return 'checkmate'
-
-                if self.check_repetition():
-                    print("════════════════════════════════════════")
-                    print()
-                    if i == 0:
-                        self.board_print(True,'white',self.board)
-                    else:
-                        self.board_print(True,'black',self.board)
-                    print()
-                    print("⏸ ═══════ Draw by repetition ═══════ ⏸")
-                    return 'draw'
-                
-                if len(self.list_game_move) >= 50:
-                    no_capture_moves = all(self.board[move[1][0]][move[1][1]] == 0 for move in self.list_game_move[-50:])               
-
-                    if no_capture_moves:
-                        print("════════════════════════════════════════")
-                        print()
-                        if i == 0:
-                            self.board_print(True,'white',self.board)
-                        else:
-                            self.board_print(True,'black',self.board)
-                        print()
-                        print("⏸ ═════ Draw by fifty-move rule ════ ⏸")
-                        return 'draw'
-
-                def material_insufficiency(board_test):
-                    for row in board_test:
-                        for element in row:
-                            if element not in [0, 7, -7]:
-                                return False
-                    return True
-
-                if material_insufficiency(self.board):
-                    print("════════════════════════════════════════")
-                    print()
-                    if i == 0:
-                        self.board_print(True,'white',self.board) 
-                    else:
-                        self.board_print(True,'black',self.board)
-                    print()
-                    print("⏸ ══ Draw by insufficient material ═ ⏸")
-                    return 'draw'
-                
-                if i == 0:
-                    print()
-                    print("⚫ ═══════════ Black play ═══════════ ⚫")
-                    print()
-                    self.board_print(True,'black',self.board)
-
-                elif i == 1:
-                    print()
-                    print("⚪ ═══════════ White play ═══════════ ⚪")
-                    print()
-                    self.board_print(True,'white',self.board)    
+            all_move = input("> ")
+            result = self.play_move(all_move, print_move=False)
+            if result == 'checkmate':
+                return 'checkmate'
+            
+            elif result == 'pat':
+                return 'pat'
+            
+            elif result == 'draw':
+                return 'draw'
+            
 
 if __name__ == "__main__":
     process = Chess()
