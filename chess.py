@@ -92,6 +92,7 @@ class Chess:
         ]
 
         self.party_over = False
+        self.auto_promotion_value = False
 
 
     def check_repetition(self):
@@ -105,15 +106,14 @@ class Chess:
     
     
     def promote_pawn(self, color):
-        piece_map = {'Q': 9, 'R': 5, 'B': 4, 'N': 3}
         if not self.auto_promotion:
-            while True:
-                choice = input("Promotion mode (the queen: 'Q', the rook: 'R', the bishop: 'B' and the knight 'N')> ")
-                if choice in piece_map:
-                    return piece_map[choice] * (1 if color == 'white' else -1)
-                
+            if self.auto_promotion_value:
+                return self.auto_promotion_value * (1 if color == 'white' else -1)
+            else:
+                print("Please set auto_promotion or provide a promotion piece. Exemple: 'e7 e8q' for queen promotion (the queen: 'q', the rook: 'r', the bishop: 'b' and the knight 'n'). ")
+                return 'invalid'
         else:
-            return int(self.auto_promotion) * (1 if color == 'white' else -1)
+            return int(self.auto_promotion_value) * (1 if color == 'white' else -1)
         
 
     def valid_pawn_move(self, move):
@@ -123,11 +123,11 @@ class Chess:
                     if self.board[move['y_start_coordinate']][move['x_end_coordinate']] == (-1 if move['start_value'] > 0 else 1):
                         if move['x_end_coordinate'] == move['x_start_coordinate']+1:
                             if self.list_game_move[-1] == [[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]]:
-                                return('en passant')
+                                return 'en passant'
                             
                         elif move['x_end_coordinate'] == move['x_start_coordinate']-1:
                             if self.list_game_move[-1] == [[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]]:
-                                return('en passant')
+                                return 'en passant'
                             
             if move['x_end_coordinate'] == move['x_start_coordinate']: 
                 if move['name_piece_coor1'] == "white_pawn":     
@@ -141,10 +141,13 @@ class Chess:
                     ):
                         if move['y_end_coordinate'] == 7:
                             move["start_value"] = self.promote_pawn('white')
-                        return('valid')
+                            if move["start_value"] == 'invalid':
+                                return 'invalid'
+                            
+                        return'valid'
                     
                     else:
-                        return('illegal')
+                        return'illegal'
 
                 if move['name_piece_coor1'] == "black_pawn":
                     if (
@@ -157,30 +160,36 @@ class Chess:
                     ):
                         if move['y_end_coordinate'] == 0:
                             move["start_value"] = self.promote_pawn('black')
+                            if move["start_value"] == 'invalid':
+                                return 'invalid'
+                            
                         return 'valid'
                     else:
-                        return('illegal')
+                        return 'illegal'
 
                 if move['name_piece_coor1'] != "black_pawn" and move['name_piece_coor1'] != "white_pawn":
-                    return('illegal')
+                    return 'illegal'
                 
             else: 
-                return('illegal')
+                return 'illegal'
 
         elif move['end_value'] != 0:
             if move['name_piece_coor1'] == "white_pawn":
                 if move['end_value'] > 0:
-                    return('illegal')
+                    return 'illegal'
                 if (
                     abs(move['x_end_coordinate'] - move['x_start_coordinate']) == 1
                     and move['y_end_coordinate'] == move['y_start_coordinate'] + 1
                 ):
                         if move['y_end_coordinate'] == 7:
                             move["start_value"] = self.promote_pawn('white')
-                        return('valid')
+                            if move["start_value"] == 'invalid':
+                                return 'invalid'
+                            
+                        return 'valid'
                 
                 else:
-                    return('illegal')
+                    return 'illegal'
 
 
             if move['name_piece_coor1'] == "black_pawn":
@@ -192,12 +201,15 @@ class Chess:
                 ):
                     if move['y_end_coordinate'] == 0:
                         move["start_value"] = self.promote_pawn('black')
-                    return('valid')
+                        if move["start_value"] == 'invalid':
+                            return 'invalid'
+                        
+                    return 'valid'
                 
                 else:
-                    return('illegal')
+                    return 'illegal'
                 
-            return('illegal')
+            return 'illegal'
         
 
     def valid_bishop_move(self, move):
@@ -1021,9 +1033,23 @@ class Chess:
         
         if print_move:
             print(f"> {all_move}")
-        if not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
-            print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
-            return 'illegal'
+
+        if not self.auto_promotion:
+            if not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
+                print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
+                return 'illegal'
+        else:
+            if all_move[-1] in ('q','r','b','n'):
+                self.auto_promotion_value = {'q':9,'r':5,'b':4,'n':3}[all_move[-1]]
+                all_move = all_move[:-1]
+
+                if not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
+                    print("🚫---invalid move---🚫 => valid move example: ✅--- e7 e8q ---✅")
+                    return 'illegal'
+
+            elif not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
+                print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
+
         print()
 
         self.info_move = self.give_move_info(all_move,debug=None)
