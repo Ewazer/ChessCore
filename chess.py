@@ -107,6 +107,27 @@ class Chess:
         self.party_over = False
         self.auto_promotion_value = False
 
+    def load_board(self, board):
+        """
+        Load a custom board configuration.
+
+        Args:
+            board (list): 2D matrix representing the board state, oriented from White's perspective (row 0 = first White rank, column 0 = 'a' file).
+            Pieces must be encoded using the following constants:
+            EMPTY = 0
+            PAWN = 1
+            KNIGHT = 3
+            BISHOP = 4
+            ROOK = 5
+            KING = 7
+            QUEEN = 9
+            Black pieces are represented by the corresponding negative value (e.g., -PAWN for a black pawn).
+
+        Returns:
+            None
+        """
+
+        self.board = [e[::-1] for e in board[::-1]]
 
     def check_repetition(self):
         """
