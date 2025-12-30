@@ -12,6 +12,11 @@ class Chess:
     QUEEN = 9
 
     def __init__(self): 
+        """
+        Initialize chess board, piece representations, castling rights, and game state.
+        Sets up coordinate mappings, piece notations, Unicode styles, castling flags, move history, and the initial board layout.
+        """
+
         self.coordinate = {
             "a":8,
             "b":7,
@@ -1346,4 +1351,4 @@ class Chess:
 
 if __name__ == "__main__":
     process = Chess()
-    process.play(auto_promotion=False)
+    process.play(auto_promotion=False)    
