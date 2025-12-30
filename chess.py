@@ -1024,7 +1024,7 @@ class Chess:
         self.auto_promotion = auto_promotion
         self.color_turn = color
 
-        print("\033[1;33m╔═════════════ GAME START ═════════════╗")
+        print("╔═════════════ GAME START ═════════════╗")
 
         if color == "white":
             print()
