@@ -906,7 +906,7 @@ class Chess:
                 if self.is_check('white' if self.board[y][x] > 0 else 'black', new_board) != 'check':
                     list_k_move.append([[y,x],[y,x-2]])
 
-        elif (
+        if (
             (self.big_castling_p_white if self.board[y][x] > 0 else self.big_castling_p_black)
             and (self.rook_m['rook_big_white_castling'] if self.board[y][x] > 0 else self.rook_m['rook_big_black_castling'])
             and self.board[y][x] > 0
