@@ -1093,17 +1093,17 @@ class Chess:
         
         if self.info_move["start_value"] > 0:
             if self.is_check('black',self.board) != 'valid':
-                print("🚫---invalid move black is in check---🚫")
+                print("🚫 Invalid move black is in check ═ 🚫")
                 return
         else:
             if self.is_check('white',self.board) != 'valid':
-                print("🚫---invalid move white is in check---🚫")
+                print("🚫 Invalid move white is in check ═ 🚫")
                 return
 
         if self.info_move["start_value"] == PAWN or self.info_move["start_value"] == -PAWN:
             result_valid_pion = self.valid_pawn_move(self.info_move)
             if result_valid_pion not in {'valid', 'en passant'}:
-                print("🚫---invalid move---🚫")
+                print("🚫 ══════════ Invalid move ════════ 🚫")
                 return
             elif result_valid_pion == 'en passant':
                 new_board = copy.deepcopy(self.board)
@@ -1112,20 +1112,20 @@ class Chess:
                 new_board[self.info_move["y_start_coordinate"]][self.info_move["x_end_coordinate"]] = EMPTY
         elif self.info_move["start_value"] == ROOK or self.info_move["start_value"] == -ROOK:
             if self.valid_rook_move(self.info_move,debug=None) != 'valid':
-                print("🚫---invalid move---🚫")
+                print("🚫 ══════════ Invalid move ════════ 🚫")
                 return 
         elif self.info_move["start_value"] == BISHOP or self.info_move["start_value"] == -BISHOP:
             if self.valid_bishop_move(self.info_move) != 'valid':
-                print("🚫---invalid move---🚫")
+                print("🚫 ══════════ Invalid move ════════ 🚫")
                 return
         elif self.info_move["start_value"] == KNIGHT or self.info_move["start_value"] == -KNIGHT:
             if self.valid_knight_move(self.info_move) != 'valid':
-                print("🚫---invalid move---🚫")
+                print("🚫 ══════════ Invalid move ════════ 🚫")
                 return
         elif self.info_move["start_value"] == KING or self.info_move["start_value"] == -KING:
             result_valid_king = self.valid_king_move(self.info_move,castling_white=self.castling_p_white,castling_black=self.castling_p_black,big_castling_black=self.big_castling_p_black,big_castling_white=self.big_castling_p_white)
             if result_valid_king not in ['casting', 'big_casting','valid']:
-                print("🚫---invalid move---🚫")
+                print("🚫 ══════════ Invalid move ════════ 🚫")
                 return 
             elif result_valid_king == 'casting':
                 print("casting !")
@@ -1170,11 +1170,11 @@ class Chess:
 
         if self.info_move["start_value"] < 0:
             if self.is_check('black',new_board) != 'valid':
-                print("🚫---invalid move black is in check---🚫")
+                print("🚫 Invalid move black is in check = 🚫")
                 return
         else:
             if self.is_check('white',new_board) != 'valid':
-                print("🚫---invalid move white is in check---🚫")
+                print("🚫 Invalid move white is in check = 🚫")
                 return
         
         self.board = copy.deepcopy(new_board)
@@ -1220,7 +1220,7 @@ class Chess:
         QUEEN = self.QUEEN
         KING = self.KING
         if self.party_over:
-            print("🚫 ═══════ the game is over ═══════ 🚫")
+            print("🚫 ═══════ The game is over ═══════ 🚫")
             return 'illegal'
         
         if print_move:
@@ -1228,7 +1228,7 @@ class Chess:
 
         if not self.auto_promotion:
             if not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
-                print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
+                print("🚫--- Invalid move ---🚫 => valid move example: ✅--- e2 e4 ---✅")
                 return 'illegal'
         else:
             if all_move[-1] in ('q','r','b','n'):
@@ -1236,11 +1236,11 @@ class Chess:
                 all_move = all_move[:-1]
 
                 if not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
-                    print("🚫---invalid move---🚫 => valid move example: ✅--- e7 e8q ---✅")
+                    print("🚫--- Invalid move ---🚫 => valid move example: ✅--- e7 e8q ---✅")
                     return 'illegal'
 
             elif not bool(re.match(r'^[a-h][1-8]\s[a-h][1-8]$', all_move)):
-                print("🚫---invalid move---🚫 => valid move example: ✅--- e2 e4 ---✅")
+                print("🚫--- Invalid move ---🚫 => valid move example: ✅--- e2 e4 ---✅")
 
         print()
 
@@ -1258,6 +1258,8 @@ class Chess:
         if rep == 'checkmate' or rep == 'pat':
             self.party_over = True
             return 'checkmate'
+        elif rep is None:
+            return 'invalid'
         
         legal_move = self.list_all_legal_move("white") if self.color_turn == "black" else self.list_all_legal_move("black")      
 
