@@ -1607,7 +1607,7 @@ class ChessCore:
         legal_move = MoveGen.list_all_legal_move(WHITE, self.board.board) if self.board.side_to_move == BLACK else MoveGen.list_all_legal_move(BLACK, self.board.board)      
 
         if legal_move == []:
-            ChessDisplay.print_draw('stalemate', self.board.board, self.color_turn)
+            ChessDisplay.print_draw('stalemate', self.board.board, self.board.side_to_move)
             return 'stalemate'
         
         return
