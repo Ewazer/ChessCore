@@ -1113,21 +1113,15 @@ class GameState:
 
 
 class ChessDisplay:
-    piece_note_style = {
-        PAWN: "♙",   
-        ROOK: "♖",   
-        KNIGHT: "♘",  
-        BISHOP: "♗",   
-        QUEEN: "♕",  
-        KING: "♔", 
-        -PAWN: "♟",
-        -ROOK: "♜",  
-        -KNIGHT: "♞", 
-        -BISHOP: "♝",  
-        -QUEEN: "♛", 
-        -KING: "♚",
-        EMPTY: " "    
-    }
+    enable_print = True
+
+    def print_diseabled(f):
+        def wrapper(*args, **kwargs):
+            if not ChessDisplay.enable_print:
+                return None
+            return f(*args, **kwargs)
+        return wrapper
+
 
     @staticmethod
     def print_board(side, board):
@@ -1139,7 +1133,7 @@ class ChessDisplay:
             board (list): 2D list (8x8) representing the board.
         """
         
-        board_rendu = [list(reversed([ChessDisplay.piece_note_style[e] for e in r])) for r in board] if side == 1 else [[ChessDisplay.piece_note_style[e] for e in r] for r in board]
+        board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if side == 1 else [[piece_note_style[e] for e in r] for r in board]
 
         
         if side == 1:
@@ -1367,7 +1361,7 @@ class ChessDisplay:
             ChessDisplay.print_board(side, board)
             return
         
-        board_rendu = [list(reversed([ChessDisplay.piece_note_style[e] for e in r])) for r in board] if side == 1 else [[ChessDisplay.piece_note_style[e] for e in r] for r in board]
+        board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if side == 1 else [[piece_note_style[e] for e in r] for r in board]
             
         board_rendu[last_move[0][0]][last_move[0][1]] = f"{start_highlight}{board_rendu[last_move[0][0]][last_move[0][1]]}{end_highlight}"
         board_rendu[last_move[1][0]][last_move[1][1]] = f"{start_highlight}{board_rendu[last_move[1][0]][last_move[1][1]]}{end_highlight}"
@@ -1399,7 +1393,7 @@ class ChessDisplay:
             ChessDisplay.print_board(side, board)
             return
 
-        board_rendu = [list(reversed([ChessDisplay.piece_note_style[e] for e in r])) for r in board] if side == 1 else [[ChessDisplay.piece_note_style[e] for e in r] for r in board]
+        board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if side == 1 else [[piece_note_style[e] for e in r] for r in board]
 
         list_move = MoveGen.list_all_piece_move(y, x, board[y][x], board)
         for e in list_move:
@@ -1432,7 +1426,7 @@ class ChessDisplay:
             ChessDisplay.print_board(side, board)
             return
 
-        board_rendu = [list(reversed([ChessDisplay.piece_note_style[e] for e in r])) for r in board] if side == 1 else [[ChessDisplay.piece_note_style[e] for e in r] for r in board]
+        board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if side == 1 else [[piece_note_style[e] for e in r] for r in board]
 
         color_to_play = 1*side
         list_move = MoveGen.list_all_legal_move(color_to_play, board, castling_rights=castling_rights)
