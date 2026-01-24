@@ -44,3 +44,19 @@ piece = {
     -QUEEN: "black_queen",
     -KING: "black_king"
 }
+
+piece_note_style = {
+    PAWN: "♙",   
+    ROOK: "♖",   
+    KNIGHT: "♘",  
+    BISHOP: "♗",   
+    QUEEN: "♕",  
+    KING: "♔", 
+    -PAWN: "♟",
+    -ROOK: "♜",  
+    -KNIGHT: "♞", 
+    -BISHOP: "♝",  
+    -QUEEN: "♛", 
+    -KING: "♚",
+    EMPTY: " "    
+}
