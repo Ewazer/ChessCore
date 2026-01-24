@@ -2,11 +2,7 @@ from constants import *
 
 class Board:
     def __init__(self):
-        """
-        Initialize the game state.
-        Sets up the initial board configuration, creates a history log for board states,
-        and initializes an empty record for moves made.
-        """
+        """Initialize the board with the standard starting position and game state."""
 
         self.board = self.init_board()
         self.board_history = [self.copy_board()]
@@ -21,13 +17,10 @@ class Board:
     @staticmethod
     def init_board():
         """
-        Initialize the chess board to the standard starting position.
+        Create the standard starting chess position.
 
         Returns:
-            list: 2D matrix representing the initial board state.
-
-        Note: 
-            When defining the table, the coordinates are intentionally reversed because this is how board is managed.
+            list: 2D list (8x8) representing the board.
         """
 
         return [
@@ -64,26 +57,11 @@ class Board:
 
     def load_board(self, board, side = WHITE):
         """
-        Load a custom board configuration.
+        Load a custom board position.
 
         Args:
-            board (list): 2D matrix representing the board state, oriented from White's perspective (row 0 = first White rank, column 0 = 'a' file).
-            Pieces must be encoded using the following constants:
-            EMPTY = 0
-            PAWN = 1
-            KNIGHT = 3
-            BISHOP = 4
-            ROOK = 5
-            KING = 7
-            QUEEN = 9
-            Black pieces are represented by the corresponding negative value (e.g., -PAWN for a black pawn).
-            side (int): Board.WHITE (1) or Board.BLACK (-1).
-
-        Returns:
-            None
-
-        Note:
-            Ignoring the fact that the parts were moved beforehand is irrelevant because it's only used with load.
+            board (list): 2D list (8x8) representing the board.
+            side (int): Side to move (WHITE=1 or BLACK=-1).
         """
 
         self.board = [e[::-1] for e in board[::-1]]
@@ -98,17 +76,14 @@ class Board:
     @staticmethod
     def find_piece(board, f_piece):
         """
-        Find the coordinates of a specific piece on the board.
+        Find the coordinates of a piece on the board.
 
         Args:
-            board_test (list): 2D list representing the board state.
-            f_piece (int): Piece to find.
+            board (list): 2D list (8x8) representing the board.
+            f_piece (int): Piece value to find.
 
         Returns:
             tuple or None: (col, row) if found, else None.
-
-        Note:
-            This function is used only to search for a king, so we assume there is only one piece on the chessboard.
         """
 
         for x, row in enumerate(board): 
@@ -126,10 +101,10 @@ class Board:
     
     def add_to_history(self, move):
         """
-        Add a move to history and save board state.
+        Add a move to history and save the current board state.
         
         Args:
-            move (dict): Move information with keys 'from', 'to', 'piece', etc.
+            move (dict): Move details with coordinates.
         """
 
         self.move_history.append(move)
@@ -139,13 +114,10 @@ class Board:
 
     def undo_move(self):
         """
-        Undo the last move. 
+        Undo the last move.
         
         Returns:
-            bool: True if undo successful, False if no moves to undo
-
-        Note:
-            Ignoring the fact that the parts were moved beforehand is irrelevant because it's only used with load_board().
+            bool: True if successful, False if no moves to undo.
         """
 
         if len(self.board_history) <= 1:
@@ -160,10 +132,7 @@ class Board:
     
     
     def get_position_hash(self):
-        """
-        Generate a hash of the current board position.
-        Useful for detecting repetitions.
-        """
+        """Generate a hash of the current position for repetition detection."""
 
         return hash((
             tuple(tuple(r) for r in self.board),
@@ -174,22 +143,14 @@ class Board:
 
     def update_board(self, board_to_copy, move, change_side_to_move = True, active_counter_halfmove_without_capture = True, update_history=True):
         """
-        Update the internal board state based on a move and a new board configuration.
-        This method handles:
-        - Updating the halfmove clock (for the 50-move rule) based on pawn moves or captures.
-        - Updating castling rights if the King or Rook moves, or if a Rook is captured.
-        - Applying the new board state.
-        - Optionally switching the side to move.
-        - Optionally updating the move and board history.
+        Apply a new board state and update game metadata.
 
         Args:
-            board_to_copy (list): A 2D list representing the new state of the board to apply.
-            move (dict): A dictionary containing move details ('x_start_coordinate', 'y_start_coordinate', 'x_end_coordinate', 'y_end_coordinate').
-            change_side_to_move (bool, optional): Whether to switch the active player after the update. Defaults to True.
-            active_counter_halfmove_without_capture (bool, optional): Whether to update the halfmove clock counter. Defaults to True.
-
-        Returns:
-            None
+            board_to_copy (list): 2D list (8x8) representing the new board state.
+            move (dict): Move details with coordinates.
+            change_side_to_move (bool): Switch side after update. Defaults to True.
+            active_counter_halfmove_without_capture (bool): Update halfmove clock. Defaults to True.
+            update_history (bool): Save to history. Defaults to True.
         """
         
         if active_counter_halfmove_without_capture:
@@ -256,13 +217,13 @@ class Board:
     @staticmethod
     def material_insufficiency(board):
         """
-        Determine if the board has insufficient material to continue the game.
+        Check if only kings remain on the board.
 
         Args:
-            board (list): 2D list representing the board state.
+            board (list): 2D list (8x8) representing the board.
             
         Returns:
-            bool: True if only kings remain (insufficient material), False otherwise.
+            bool: True if insufficient material, False otherwise.
         """
         
         for row in board:
@@ -276,13 +237,15 @@ class MoveParser:
     @staticmethod
     def give_move_info(all_move, board, debug=False):
         """
-        Extract move information from a move string and validate coordinates.
+        Parse a move string and extract move information.
+
         Args:
-            all_move (str): Move in the format "e2 e4".
-            board (list): 2D list representing the board state.
-            debug (bool, optional): Print debug info if True.
+            all_move (str): Move string (e.g., "e2 e4").
+            board (list): 2D list (8x8) representing the board.
+            debug (bool): Print debug info. Defaults to False.
+
         Returns:
-            dict or 'illegal': Move details as dict, or 'illegal' if invalid.
+            dict or str: Move details dict, or 'illegal' if invalid.
         """
 
         try:
@@ -354,16 +317,13 @@ class MoveParser:
     @staticmethod
     def is_valid_move_format(all_move):
         """
-        Validate if the move string has the correct format.
-
-        A valid move must be 5 characters long: source square (letter + number),
-        a space, and destination square (letter + number).
+        Check if a move string has valid format (e.g., "e2 e4").
 
         Args:
-            all_move (str): The move string to validate (e.g., "e2 e4").
+            all_move (str): Move string to validate.
 
         Returns:
-            bool: True if the move format is valid, False otherwise.
+            bool: True if valid format, False otherwise.
         """
 
         return (len(all_move) == 5 and
@@ -378,15 +338,15 @@ class Validator:
     @staticmethod
     def promote_pawn(side, promotion_value=None, auto_promotion_value=QUEEN):
         """
-        Handle pawn promotion for the given color.
+        Get the promoted piece value.
 
         Args:
-            side (int): 1 for white or -1 for black.
-            auto_promotion (bool): Whether to automatically promote pawns.
-            auto_promotion_value (int): The piece to promote to if auto_promotion is True.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+            promotion_value (int): Piece to promote to, or None.
+            auto_promotion_value (int): Default promotion piece.
     
         Returns:
-            int or 'invalid': Promotion value or 'invalid' if not set.
+            int or str: Piece value, or 'invalid' if not set.
         """
         if promotion_value:
             return promotion_value * side
@@ -402,11 +362,15 @@ class Validator:
     @staticmethod
     def valid_pawn_move(move, move_history, board, promotion_value=None, auto_promotion_value=QUEEN):
         """
-        Validate a pawn move, including en passant and promotion.
+        Validate a pawn move (includes en passant and promotion).
+
         Args:
-            move (dict): Move details with coordinates and piece info.
-            move_history (list): List of previous moves made in the game.
-            board (list): Current board state.
+            move (dict): Move details with coordinates.
+            move_history (list): List of previous moves.
+            board (list): 2D list (8x8) representing the board.
+            promotion_value (int): Piece to promote to, or None.
+            auto_promotion_value (int): Default promotion piece.
+
         Returns:
             str: 'valid', 'illegal', 'en passant', or 'invalid'.
         """
@@ -509,12 +473,14 @@ class Validator:
     @staticmethod
     def valid_bishop_move(move, board):
         """
-        Validate a bishop (or queen as bishop) move.
+        Validate a diagonal move (bishop or queen).
+
         Args:
-            move (dict): Move details with coordinates and piece info.
-            board (list): Current board state.
+            move (dict): Move details with coordinates.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            str: 'valid' if move is legal, 'illegal' otherwise.
+            str: 'valid' or 'illegal'.
         """
 
         if (move['name_piece_coor1'] in ('black_bishop', 'black_queen') and move['end_value'] < 0) or \
@@ -547,14 +513,14 @@ class Validator:
     @staticmethod
     def valid_rook_move(move, board):
         """
-        Validate a rook move and update castling rights.
+        Validate a rook move (horizontal or vertical).
+
         Args:
-            move (dict): Move details with coordinates and piece values.
-            debug (optional): Debug flag.
-            board (list): Current board state.
+            move (dict): Move details with coordinates.
+            board (list): 2D list (8x8) representing the board.
     
         Returns:
-            str: 'valid' if move is legal, 'illegal' otherwise.
+            str: 'valid' or 'illegal'.
         """
 
         if move['end_value'] == EMPTY or (move['end_value'] < 0 and move['start_value'] > 0) or (move['end_value'] > 0 and move['start_value'] < 0):
@@ -578,11 +544,13 @@ class Validator:
     @staticmethod
     def valid_knight_move(move):
         """
-        Validate if a knight move is legal.
+        Validate a knight move (L-shape).
+
         Args:
-            move (dict): Move details with start/end coordinates and values.
+            move (dict): Move details with coordinates.
+
         Returns:
-            str: 'valid' if move is legal, 'illegal' otherwise.
+            str: 'valid' or 'illegal'.
         """
 
         if move['end_value'] == EMPTY or ((move['end_value'] > 0 and move['start_value'] < 0) or (move['end_value'] < 0 and move['start_value'] > 0)): 
@@ -599,11 +567,14 @@ class Validator:
     @staticmethod
     def valid_queen_move(move, board):
         """
-        Validate if the queen move is legal.
+        Validate a queen move (combines rook and bishop moves).
+
         Args:
-            move (str): Chess move in algebraic notation.
+            move (dict): Move details with coordinates.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            str: 'valid' if the move is legal, 'illegal' otherwise.
+            str: 'valid' or 'illegal'.
         """
 
         if Validator.valid_rook_move(move, board) == 'valid' or Validator.valid_bishop_move(move, board) == 'valid':
@@ -616,14 +587,15 @@ class Validator:
     @staticmethod
     def valid_king_move(move, castling_rights, board):
         """
-        Validate king moves, including castling and big castling.
+        Validate a king move (includes castling).
         
         Args:
-            move (dict): Move details with coordinates and piece values.
-            board (list): Current board state.
-            castling_rights (set): Current castling rights.
+            move (dict): Move details with coordinates.
+            castling_rights (set): Current castling rights (e.g., {'K', 'Q', 'k', 'q'}).
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            str: 'casting', 'big_casting', 'valid', or 'illegal'.
+            str: 'castling', 'big_castling', 'valid', or 'illegal'.
         """
 
         if (
@@ -678,13 +650,15 @@ class MoveGen:
     @staticmethod
     def list_pawn_move(y, x, board):
         """
-        Generate all legal pawn moves from a given position.
+        Generate all pawn moves from position (y, x).
+
         Args:
-            y (int): Row index of the pawn.
-            x (int): Column index of the pawn.
-            board (list): Current board state.
+            y (int): Row index.
+            x (int): Column index.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            list: List of possible pawn moves as [[from_y, from_x], [to_y, to_x]].
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_p_move = []
@@ -708,13 +682,15 @@ class MoveGen:
     @staticmethod
     def list_knight_move(y, x, board):
         """
-        Generate all valid knight moves from a given position.
+        Generate all knight moves from position (y, x).
+
         Args:
-            y (int): Row index of the knight.
-            x (int): Column index of the knight.
-            board (list): Current board state.  
+            y (int): Row index.
+            x (int): Column index.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            list: List of valid knight moves as [[from_y, from_x], [to_y, to_x]].
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_k_move = []
@@ -731,13 +707,15 @@ class MoveGen:
     @staticmethod
     def list_bishop_move(y, x, board):
         """
-        Generate all legal bishop moves from a given position.
+        Generate all bishop moves from position (y, x).
+
         Args:
-            y (int): Row index of the bishop.
-            x (int): Column index of the bishop.
-            board (list): Current board state.
+            y (int): Row index.
+            x (int): Column index.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            list: List of possible bishop moves as [[from_y, from_x], [to_y, to_x]].
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_b_move = []
@@ -760,13 +738,15 @@ class MoveGen:
     @staticmethod
     def list_rook_move(y, x, board):
         """
-        Generate all legal rook moves from a given position.
+        Generate all rook moves from position (y, x).
+
         Args:
-            y (int): Row index of the rook.
-            x (int): Column index of the rook.
-            board (list): Current board state.
+            y (int): Row index.
+            x (int): Column index.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            list: List of possible rook moves as [[from_y, from_x], [to_y, to_x]].
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_r_move = []
@@ -789,13 +769,15 @@ class MoveGen:
     @staticmethod
     def list_queen_move(y, x, board):
         """
-        Generate all valid queen moves from the given position.
+        Generate all queen moves from position (y, x).
+
         Args:
-            y (int): Row index of the queen.
-            x (int): Column index of the queen.
-            board (list): Current board state.
+            y (int): Row index.
+            x (int): Column index.
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            list: List of valid queen moves as [[from_y, from_x], [to_y, to_x]].
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_q_move = []
@@ -818,14 +800,16 @@ class MoveGen:
     @staticmethod
     def list_king_move(y, x, castling_rights, board):
         """
-        Generate all legal king moves (including castling) from position (y, x).
+        Generate all king moves from position (y, x), including castling.
+
         Args:
-            y (int): Row index of the king.
-            x (int): Column index of the king.
-            castling_rights (set): Current castling rights.
-            board (list): Current board state.
+            y (int): Row index.
+            x (int): Column index.
+            castling_rights (set): Current castling rights (e.g., {'K', 'Q', 'k', 'q'}).
+            board (list): 2D list (8x8) representing the board.
+
         Returns:
-            list: List of possible king moves as [[from_y, from_x], [to_y, to_x]].
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_k_move = []
@@ -867,15 +851,15 @@ class MoveGen:
     @staticmethod
     def list_all_legal_move(side, board, castling_rights = {}):
         """
-        List all legal moves for the given color, excluding moves that leave the king in check.
+        Generate all legal moves for a side (excluding moves leaving king in check).
         
         Args:
-            side (int): 1 for white or -1 for black.
-            board (list): A 2D list representing the current state of the chess board.
-            castling_rights (set, optional): Current castling rights.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+            board (list): 2D list (8x8) representing the board.
+            castling_rights (set): Current castling rights. Defaults to empty.
         
         Returns:
-            list: List of legal moves as tuples of start and end positions.
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         list_all_move = []
@@ -910,16 +894,17 @@ class MoveGen:
     @staticmethod
     def list_all_piece_move(y, x, piece_value, board, castling_rights = {}):
         """
-        Generate all possible moves for a given piece on the board.
+        Generate all moves for a specific piece.
 
         Args:
-            x (int): The x-coordinate (column) of the piece.
-            y (int): The y-coordinate (row) of the piece.
-            piece_value (int): The value representing the type and color of the piece.
-            board (list): The current state of the chess board.
+            y (int): Row index.
+            x (int): Column index.
+            piece_value (int): Piece type and color value.
+            board (list): 2D list (8x8) representing the board.
+            castling_rights (set): Castling rights for king moves. Defaults to empty.
 
         Returns:
-            list: A list of possible moves for the specified piece.
+            list: Moves as [[from_y, from_x], [to_y, to_x]].
         """
 
         if abs(piece_value) == PAWN:
@@ -942,10 +927,12 @@ class GameState:
     @staticmethod
     def is_check(side, board_actual):
         """
-        Check if the king of the given color is in check.
+        Check if a king is in check.
+
         Args:
-            side (int): 1 for white or -1 for black.
-            board_actual (list): Current board state.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+            board_actual (list): 2D list (8x8) representing the board.
+
         Returns:
             str: 'check', 'valid', or 'error'.
         """
@@ -1083,10 +1070,12 @@ class GameState:
     @staticmethod
     def is_checkmate(side, board_actual):
         """
-        Determine if the given color is in checkmate on the provided board.
+        Check if a side is in checkmate.
+
         Args:
-            side (int): 1 for white or -1 for black.
-            board_actual (list): Current board state.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+            board_actual (list): 2D list (8x8) representing the board.
+
         Returns:
             bool: True if checkmate, False otherwise.
         """
@@ -1110,14 +1099,14 @@ class GameState:
     
     def check_repetition(hash, position_hash_history):
         """
-        Check if a board position has occurred at least three times (threefold repetition).
+        Check for threefold repetition.
 
         Args:
-            hash (int): The hash value representing the current board position.
-            position_hash_history (dict): A dictionary mapping position hashes to their occurrence counts.
+            hash (int): Position hash to check.
+            position_hash_history (dict): Hash occurrence counts.
             
         Returns:
-            bool: True if any board position has occurred at least three times, False otherwise.
+            bool: True if position occurred 3+ times, False otherwise.
         """
 
         return position_hash_history.get(hash, 0) >= 3
@@ -1143,14 +1132,11 @@ class ChessDisplay:
     @staticmethod
     def print_board(side, board):
         """
-        Print the chess board in the specified style and orientation.
+        Print the chess board.
 
         Args:
-            side (int): 1 for white or -1 for black, determines board orientation.
-            board (list): 2D list representing the board state.
-
-        Returns:
-            None
+            side (int): Orientation (WHITE=1 or BLACK=-1).
+            board (list): 2D list (8x8) representing the board.
         """
         
         board_rendu = [list(reversed([ChessDisplay.piece_note_style[e] for e in r])) for r in board] if side == 1 else [[ChessDisplay.piece_note_style[e] for e in r] for r in board]
@@ -1167,12 +1153,11 @@ class ChessDisplay:
     @staticmethod
     def print_game_start(board, side=1):
         """
-        Print the initial chess board setup.
+        Print the game start message and board.
 
         Args:
-            side (int): 1 for white or -1 for black, determines board orientation.
-        Returns:
-            None
+            board (list): 2D list (8x8) representing the board.
+            side (int): Orientation (WHITE=1 or BLACK=-1). Defaults to 1.
         """
 
         print("╔═════════════ GAME START ═════════════╗")
@@ -1188,13 +1173,10 @@ class ChessDisplay:
     @staticmethod
     def print_turn(side):
         """
-        Print the current chess board state.
+        Print which side's turn it is.
 
         Args:
-            side (int): 1 for white or -1 for black, determines board orientation.
-
-        Returns:
-            None
+            side (int): Side to play (WHITE=1 or BLACK=-1).
         """
 
         print()
@@ -1206,10 +1188,10 @@ class ChessDisplay:
     @staticmethod
     def print_invalid_move(reason=None):
         """
-        Print a message indicating an invalid move.
+        Print an invalid move message.
 
-        Returns:
-            None
+        Args:
+            reason (str): Optional reason for the invalid move.
         """
 
         print("🚫 ══════════ Invalid move ══════════ 🚫")
@@ -1221,12 +1203,7 @@ class ChessDisplay:
 
     @staticmethod
     def print_game_already_over():
-        """
-        Print a message indicating the game is already over.
-
-        Returns:
-            None
-        """
+        """Print a message indicating the game is already over."""
 
         print("🚫 ════════ The game is over ════════ 🚫")
         return
@@ -1235,15 +1212,12 @@ class ChessDisplay:
     @staticmethod
     def print_game_over(winner, board, side=None):
         """
-        Print the game over message with the winner.
+        Print the checkmate message.
 
         Args:
-            winner (int): 1 for white or -1 for black.
-            board (list): The board state.
-            side (int, optional): Board orientation (1 for white, -1 for black).
-
-        Returns:
-            None
+            winner (int): Winning side (WHITE=1 or BLACK=-1).
+            board (list): 2D list (8x8) representing the board.
+            side (int): Board orientation. Defaults to winner.
         """
         
         print("════════════════════════════════════════")
@@ -1257,10 +1231,12 @@ class ChessDisplay:
     @staticmethod
     def print_draw(d_type, board, side = 1):
         """
-        Print a message indicating the game ended in a draw.
+        Print a draw message.
 
-        Returns:
-            None
+        Args:
+            d_type (str): Draw type ('insufficient_material', 'fifty_move_rule', 'threefold_repetition').
+            board (list): 2D list (8x8) representing the board.
+            side (int): Board orientation. Defaults to 1.
         """
         
         print("════════════════════════════════════════")
@@ -1282,15 +1258,12 @@ class ChessDisplay:
     @staticmethod
     def print_stalemate(board, side_in_pat, side = None):
         """
-        Print a message indicating the game ended in stalemate.
+        Print a stalemate message.
 
         Args:
-            board (list): The board state.
-            side_in_pat (int): The side that is in stalemate (1 for white, -1 for black).
-            side (int, optional): Board orientation (1 for white, -1 for black).
-
-        Returns:
-            None
+            board (list): 2D list (8x8) representing the board.
+            side_in_pat (int): Side in stalemate (WHITE=1 or BLACK=-1).
+            side (int): Board orientation. Defaults to side_in_pat.
         """
 
         print("════════════════════════════════════════")
@@ -1304,10 +1277,10 @@ class ChessDisplay:
     @staticmethod
     def print_move(move):
         """
-        Print the given chess move.
+        Print a chess move.
         
-        Returns:
-            None
+        Args:
+            move (str): Move string to print.
         """
 
         print(f"> {move}")
@@ -1317,12 +1290,7 @@ class ChessDisplay:
     
     @staticmethod
     def print_invalid_format():
-        """
-        Print a message indicating the move format is invalid.
-
-        Returns:
-            None
-        """
+        """Print an invalid format message with example."""
 
         print("🚫 ═════════ Invalid format ═════════ 🚫")
         print("Valid move example: ✅--- e2 e4 ---✅")
@@ -1332,13 +1300,10 @@ class ChessDisplay:
     @staticmethod
     def print_row_as_list(row):
         """
-        Convert a row of the chess board into a list of strings, replacing empty cells with a visible placeholder.
+        Print a board row with empty cells shown as '#'.
         
         Args:
-            row (list): A list representing a row of the chess board.
-
-        Returns:
-            None
+            row (list): Row of piece symbols.
         """
 
         import re
@@ -1358,13 +1323,13 @@ class ChessDisplay:
     @staticmethod
     def color_to_code(color):
         """
-        Convert a color name to its corresponding ANSI escape code.
+        Convert a color name to ANSI codes.
 
         Args:
-            color (str): The color name ("red", "green", "yellow", "blue", "magenta", "cyan").
+            color (str): Color name ("red", "green", "yellow", "blue", "magenta", "cyan").
 
         Returns:
-            tuple: A tuple containing the start and end ANSI escape codes for the specified color.
+            tuple: (start_code, end_code) or (None, None) if invalid.
         """
 
         if color == "red":
@@ -1386,16 +1351,13 @@ class ChessDisplay:
     @staticmethod
     def print_last_move_highlighted(color, board, last_move, side = 1):
         """
-        Highlight the last move made on the chess board with a specific color.
+        Print the board with the last move highlighted.
 
         Args:
-            color (str): The color code name for highlighting ("red", "green", "yellow", "blue", "magenta", "cyan").
-            board (list): The current state of the chess board, represented as a 2D list.
-            last_move (list): A list containing the start and end coordinates of the move, formatted as [[from_y, from_x], [to_y, to_x]].
-            side (int): 1 for white or -1 for black, determines board orientation.
-
-        Returns:
-            None
+            color (str): Highlight color name.
+            board (list): 2D list (8x8) representing the board.
+            last_move (list): Move as [[from_y, from_x], [to_y, to_x]].
+            side (int): Board orientation. Defaults to 1.
         """
 
         start_highlight, end_highlight = ChessDisplay.color_to_code(color)
@@ -1420,17 +1382,14 @@ class ChessDisplay:
     @staticmethod
     def print_highlighted_legal_move(y, x, color, board, side = 1):
         """
-        Highlights and prints all legal moves for a piece at the given position on the chess board.
+        Print the board with legal moves for a piece highlighted.
 
         Args:
-            y (int): Row index of the piece.
-            x (int): Column index of the piece.
-            color (str): Color name for highlighting moves (e.g., "red", "green", "yellow", etc.).
-            board (list): 2D list representing the current chess board state.
-            side (int): 1 for white or -1 for black, determines board orientation.
-
-        Returns:
-            None
+            y (int): Row index.
+            x (int): Column index.
+            color (str): Highlight color name.
+            board (list): 2D list (8x8) representing the board.
+            side (int): Board orientation. Defaults to 1.
         """
         
         start_highlight, end_highlight = ChessDisplay.color_to_code(color)
@@ -1457,16 +1416,13 @@ class ChessDisplay:
     @staticmethod
     def print_highlighted_all_legal_move(color, board, side = 1, castling_rights = {}):
         """
-        Highlights and prints all legal moves for the current player on the chess board.
+        Print the board with all legal moves highlighted.
 
         Args:
-            color (str): Color name for highlighting moves (e.g., "red", "green", "yellow", etc.).
-            board (list): 2D list representing the current chess board state.
-            side (int): 1 for white or -1 for black, determines board orientation.
-            castling_rights (str, optional): Current castling rights ("KQkq").
-
-        Returns:
-            None
+            color (str): Highlight color name.
+            board (list): 2D list (8x8) representing the board.
+            side (int): Side to move (WHITE=1 or BLACK=-1). Defaults to 1.
+            castling_rights (set): Current castling rights. Defaults to empty.
         """
 
         start_highlight, end_highlight = ChessDisplay.color_to_code(color)
@@ -1501,11 +1457,13 @@ class ChessCore:
     @staticmethod
     def give_promotion_value(auto_promotion):
         """
-        Convert promotion string to corresponding piece value.
+        Convert promotion name to piece value.
+
         Args:
-            auto_promotion (str): Promotion setting for pawns, ("queen", "rook", "bishop", "knight").
+            auto_promotion (str): Piece name ("queen", "rook", "bishop", "knight").
+
         Returns:
-            int: Corresponding piece value for promotion.
+            int or False: Piece value, or False if invalid.
         """
 
         promotion_dict = {
@@ -1520,12 +1478,11 @@ class ChessCore:
 
     def launch_partie(self, side="white", auto_promotion = False):
         """
-        Initialize and start a chess game, setting turn color.
+        Start a new chess game.
+
         Args:
-            side (str): 'white' or 'black' to set the starting player.
-            auto_promotion (str or bool): Promotion setting for pawns, ("queen", "rook", "bishop", "knight") or False for disable auto-promotion.
-        Returns:
-            None
+            side (str): Starting side ('white' or 'black'). Defaults to 'white'.
+            auto_promotion (str or False): Auto-promotion piece name, or False to disable.
         """
 
         self.auto_promotion = ChessCore.give_promotion_value(auto_promotion)
@@ -1539,12 +1496,14 @@ class ChessCore:
 
     def play_move(self, all_move, print_move=True):
         """
-        Play a move in the chess game, handling move validation, special rules, and game end conditions.
+        Play a move and handle game logic.
+
         Args:
-            all_move (str): Move in algebraic notation (e.g., 'e2 e4' or 'e7 e8q').
-            print_move (bool, optional): Whether to print the move. Defaults to True.
+            all_move (str): Move string (e.g., 'e2 e4' or 'e7 e8q').
+            print_move (bool): Print the move. Defaults to True.
+
         Returns:
-            str: 'valid', 'invalid', 'illegal', 'checkmate', 'stalemate', or 'draw' depending on the move result.
+            str: 'valid', 'invalid', 'illegal', 'checkmate', or 'draw'.
         """
 
         if self.party_over:
@@ -1631,10 +1590,10 @@ class ChessCore:
 
     def check_loaded_position(self):
         """
-        Check the loaded chess position for checkmate or stalemate and print the appropriate game status.
+        Check if a loaded position is checkmate or stalemate.
         
         Returns:
-            str: 'checkmate' if the position is a checkmate for either side, 'stalemate' if no legal moves are available, otherwise None.
+            str or None: 'checkmate', 'stalemate', or None if game continues.
         """
 
         if GameState.is_checkmate(-1,self.board.board):
@@ -1656,9 +1615,10 @@ class ChessCore:
 
     def validate_and_apply_move(self):
         """
-        Validate the current move, apply it to the board if legal, and handle special cases (check, checkmate, stalemate, castling, en passant).
+        Validate and apply the current move to the board.
+
         Returns:
-            str or None: 'valid' or None if the move is invalid.
+            str or None: 'valid' if successful, None if invalid.
         """
         
         if GameState.is_check(self.board.side_to_move*-1,self.board.board) != 'valid':
@@ -1740,14 +1700,14 @@ class ChessCore:
 
     def play(self, side="white", auto_promotion = False):
         """
-        Play a chess game loop for the given color.
+        Run an interactive chess game loop.
         
         Args:
-            color (str): 'white' or 'black'.
-            auto_promotion (str or bool): Promotion setting for pawns, ("queen", "rook", "bishop", "knight") or False for disable auto-promotion.
+            side (str): Starting side ('white' or 'black'). Defaults to 'white'.
+            auto_promotion (str or False): Auto-promotion piece name, or False to disable.
 
         Returns:
-            str: 'checkmate', 'pat', or 'draw' when the game ends.
+            str: 'checkmate', 'pat', or 'draw' when game ends.
         """
 
         self.launch_partie(side=side, auto_promotion=auto_promotion)
@@ -1764,6 +1724,26 @@ class ChessCore:
             elif result == 'draw':
                 return 'draw'
             
+
+    def reset_game(self):
+        """Reset the game to its initial state."""
+
+        self.board = Board()
+        self.party_over = False
+        return
+
+
+    def load_board(self, board):
+        """
+        Load a custom board position.
+
+        Args:
+            board (list): 2D list (8x8) representing the board.
+        """
+
+        self.board.load_board(board)
+        return
+
 
 if __name__ == "__main__":
     process = ChessCore()
