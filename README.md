@@ -8,7 +8,7 @@ Chess.py is a chess game written in Python. This project allows you to play ches
    ```sh
    git clone https://github.com/Ewazer/chess.git
    ```
-2. Accédez au répertoire du projet :
+2. Access the project directory :
    ```sh
    cd chess.py
    ```
@@ -25,22 +25,57 @@ chess.py
 
 ## Features
 
-- **Interactive Command-Line Interface**: Play chess with a beautiful Unicode board display
-- **Complete Standard chess rules from FIDE (World Chess Federation)**:
-  - All standard piece movements (Pawn, Knight, Bishop, Rook, Queen, King)
-  - Castling (both kingside and queenside)
+## Features
+
+- **Interactive Command-Line Interface**: Play chess with a Unicode board display
+
+- **Complete Standard Chess Rules from FIDE (World Chess Federation)**:
+  - All standard piece movements
+  - Castling
   - En passant capture
-  - Pawn promotion with choice of piece (Queen, Rook, Bishop, Knight)
+  - Pawn promotion with choice of piece
   - Check and checkmate detection
   - Stalemate detection
   - Draw by threefold repetition
   - Draw by fifty-move rule
   - Draw by insufficient material
-- **Flexible Gameplay Options**:  
-  - Choose starting color (white or black)
+
+- **Flexible Gameplay Options**:
+  - Choose starting color
   - Customizable pawn promotion (automatic or manual selection)
   - Move history tracking
-  - Custom board positions - Load any chess position programmatically
+  - Custom board positions
+ 
+- **Board Visualization**:
+  - Unicode chess piece symbols
+  - Board orientation based on player side
+  - Highlighted last move display with customizable colors
+  - Highlighted legal moves for any piece
+  - Highlighted all legal moves for current player
+
+- **Move Validation**:
+  - Complete move format validation (e.g., "e2 e4")
+  - Illegal move detection with reason feedback
+
+- **Game State Management**:
+  - Undo move functionality
+  - Board state history tracking
+  - Position hash for repetition detection
+  - Halfmove clock for fifty-move rule
+  - Castling rights tracking and automatic updates
+
+- **Analysis Tools**:
+  - Legal move generation for any piece
+  - Complete legal move list for current player
+  - Check detection
+  - Checkmate detection
+  - Material insufficiency detection
+
+- **Developer-Friendly API**:
+  - Modular class structure (Board, MoveParser, Validator, MoveGen, GameState, ChessDisplay, ChessCore)
+  - Static methods for move validation and generation
+  - Board copy utilities for move simulation
+  - Position hashing for state comparison
 
 ## Example Game
 
@@ -65,16 +100,16 @@ When promoting a pawn, add the piece code at the end:
 ### Custom Game Setup
 
 ```python
-from chess import Chess
+from chess import ChessCore
 
 # Create a new game
-game = Chess()
+game = ChessCore()
 
 # Start with black pieces
-game.play(color="black")
+game.play(side="black")
 
 # Enable automatic queen promotion
-game.play(auto_promotion="9")
+game.play(auto_promotion="queen")
 
 # Disable auto-promotion (manual choice)
 game.play(auto_promotion=False)
@@ -83,10 +118,11 @@ game.play(auto_promotion=False)
 ### Programmatic Play
 
 ```python
-from chess import Chess
+from chess import ChessCore
 
-game = Chess()
-game.launch_partie(color="white")
+# Create a new game
+game = ChessCore()
+game.launch_partie(side="white")
 
 # Play a sequence of moves
 moves = ["e2 e4", "e7 e5", "g1 f3", "b8 c6"]
@@ -102,11 +138,11 @@ for move in moves:
 You can load any chess position using the `load_board()` method.
 
 ```python
-from chess import Chess
+from chess import ChessCore, Board
 
-game = Chess()
+game = ChessCore()
 
-# Define piece constants
+# Define piece constants or import from constants.py
 EMPTY = 0
 PAWN = 1
 KNIGHT = 3
@@ -115,24 +151,24 @@ ROOK = 5
 KING = 7
 QUEEN = 9
 
-# Create a custom position (White's perspective:  rank 1 = row 0, 'a' file = column 0)
+# Create a custom position
 # Example: King and Pawn endgame
 custom_board = [
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, KING, EMPTY],     # Rank 1
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, PAWN, EMPTY],     # Rank 2
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],    # Rank 3
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],    # Rank 4
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],    # Rank 5
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],    # Rank 6
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, -PAWN, EMPTY, EMPTY],    # Rank 7
-    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, -KING, EMPTY]     # Rank 8
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, KING, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, PAWN, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, -PAWN, EMPTY, EMPTY],
+    [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, -KING, EMPTY]
 ]
 
 # Load the custom position
 game.load_board(custom_board)
 
 # Start playing from this position
-game.launch_partie(color="white")
+game.launch_partie(side="white")
 ```
 
 #### Piece Encoding
@@ -148,6 +184,11 @@ When creating custom boards, use these values:
 | Rook | 5 | -5 |
 | King | 7 | -7 |
 | Queen | 9 | -9 |
+
+## AI
+
+No code in this project was generated using artificial intelligence.
+Exception for docstrings, which were mostly automatically generated by artificial intelligence.
 
 ## Contributing
 
