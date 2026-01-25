@@ -1124,6 +1124,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_board(side, board):
         """
         Print the chess board.
@@ -1143,8 +1144,9 @@ class ChessDisplay:
             print(row)
         return
 
-    
+
     @staticmethod
+    @print_diseabled
     def print_game_start(board, side=1):
         """
         Print the game start message and board.
@@ -1165,6 +1167,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_turn(side):
         """
         Print which side's turn it is.
@@ -1180,6 +1183,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_invalid_move(reason=None):
         """
         Print an invalid move message.
@@ -1196,6 +1200,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_game_already_over():
         """Print a message indicating the game is already over."""
 
@@ -1204,6 +1209,7 @@ class ChessDisplay:
     
 
     @staticmethod
+    @print_diseabled
     def print_game_over(winner, board, side=None):
         """
         Print the checkmate message.
@@ -1223,6 +1229,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_draw(d_type, board, side = 1):
         """
         Print a draw message.
@@ -1250,6 +1257,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_stalemate(board, side_in_pat, side = None):
         """
         Print a stalemate message.
@@ -1269,6 +1277,7 @@ class ChessDisplay:
 
 
     @staticmethod
+    @print_diseabled
     def print_move(move):
         """
         Print a chess move.
@@ -1283,6 +1292,7 @@ class ChessDisplay:
 
     
     @staticmethod
+    @print_diseabled
     def print_invalid_format():
         """Print an invalid format message with example."""
 
