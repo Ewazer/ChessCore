@@ -648,7 +648,7 @@ class Validator:
 
 class MoveGen:
     @staticmethod
-    def list_pawn_move(y, x, board):
+    def list_pawn_move(y, x, move_history, board):
         """
         Generate all pawn moves from position (y, x).
 
@@ -675,10 +675,19 @@ class MoveGen:
 
         if x - 1 >= 0 and board[y + direction][x - 1] * board[y][x] < 0: 
             list_p_move.append([[y,x],[y + direction, x - 1]])
+
+        if (y == 4 and direction == 1) or (y == 3 and direction == -1):
+            if x + 1 <= 7 and board[y][x + 1] == (-PAWN if board[y][x] > 0 else PAWN):
+                if move_history[-1] == [[(y + 2 * direction), x + 1],[y, x + 1]]:
+                    list_p_move.append([[y,x],[y + direction, x + 1]])
+
+            if x - 1 >= 0 and board[y][x - 1] == (-PAWN if board[y][x] > 0 else PAWN):
+                if move_history[-1] == [[(y + 2 * direction), x - 1],[y, x - 1]]:
+                    list_p_move.append([[y,x],[y + direction, x - 1]])
         
         return list_p_move
     
-
+    
     @staticmethod
     def list_knight_move(y, x, board):
         """
@@ -849,7 +858,7 @@ class MoveGen:
 
 
     @staticmethod
-    def list_all_legal_move(side, board, castling_rights = {}):
+    def list_all_legal_move(side, move_history, board, castling_rights = {}):
         """
         Generate all legal moves for a side (excluding moves leaving king in check).
         
@@ -869,7 +878,7 @@ class MoveGen:
                 if board[y_i][x_i] != EMPTY and ((side == 1 and board[y_i][x_i] > 0) or (side == -1 and board[y_i][x_i] < 0)):
                     n_move = []
                     if abs(board[y_i][x_i]) == PAWN:
-                        n_move = MoveGen.list_pawn_move(y_i,x_i, board)
+                        n_move = MoveGen.list_pawn_move(y_i,x_i, move_history, board)
                     elif abs(board[y_i][x_i]) == KING:
                         n_move = MoveGen.list_king_move(y_i,x_i, castling_rights, board)
                     elif abs(board[y_i][x_i]) == QUEEN:
@@ -892,7 +901,7 @@ class MoveGen:
 
 
     @staticmethod
-    def list_all_piece_move(y, x, piece_value, board, castling_rights = {}):
+    def list_all_piece_move(y, x, piece_value, board, move_history, castling_rights = {}):
         """
         Generate all moves for a specific piece.
 
@@ -908,7 +917,7 @@ class MoveGen:
         """
 
         if abs(piece_value) == PAWN:
-            return MoveGen.list_pawn_move(y, x, board)
+            return MoveGen.list_pawn_move(y, x, move_history, board)
         elif abs(piece_value) == KNIGHT:
             return MoveGen.list_knight_move(y, x, board)
         elif abs(piece_value) == BISHOP:
@@ -1068,13 +1077,14 @@ class GameState:
 
 
     @staticmethod
-    def is_checkmate(side, board_actual):
+    def is_checkmate(side, board_actual, move_history):
         """
         Check if a side is in checkmate.
 
         Args:
             side (int): Side color (WHITE=1 or BLACK=-1).
             board_actual (list): 2D list (8x8) representing the board.
+            move_history (list): List of previous moves.
 
         Returns:
             bool: True if checkmate, False otherwise.
@@ -1083,7 +1093,7 @@ class GameState:
         if side in (1, -1):
             if GameState.is_check(side, board_actual) == 'check':
                 # Rook rights don't matter since you can't rook if you're in check.                
-                move = MoveGen.list_all_legal_move(side, board_actual)
+                move = MoveGen.list_all_legal_move(side, move_history, board_actual)
                 
                 for m in move:
                     if board_actual[m[0][0]][m[0][1]] not in (KING,-KING) or abs(m[0][1]-m[1][1]) != 2:
@@ -1384,7 +1394,7 @@ class ChessDisplay:
 
 
     @staticmethod
-    def print_highlighted_legal_move(y, x, color, board, side = 1):
+    def print_highlighted_legal_move(y, x, color, board, side = 1, move_history = []):
         """
         Print the board with legal moves for a piece highlighted.
 
@@ -1394,6 +1404,7 @@ class ChessDisplay:
             color (str): Highlight color name.
             board (list): 2D list (8x8) representing the board.
             side (int): Board orientation. Defaults to 1.
+            move_history (list): List of previous moves. Defaults to empty.
         """
         
         start_highlight, end_highlight = ChessDisplay.color_to_code(color)
@@ -1405,7 +1416,7 @@ class ChessDisplay:
 
         board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if side == 1 else [[piece_note_style[e] for e in r] for r in board]
 
-        list_move = MoveGen.list_all_piece_move(y, x, board[y][x], board)
+        list_move = MoveGen.list_all_piece_move(y, x, board[y][x], board, move_history=move_history)
         for e in list_move:
             board_rendu[e[0][0]][e[0][1]] = f"{start_highlight}{board_rendu[e[0][0]][e[0][1]]}{end_highlight}"
             board_rendu[e[1][0]][e[1][1]] = f"{start_highlight}{board_rendu[e[1][0]][e[1][1]]}{end_highlight}"
@@ -1418,7 +1429,7 @@ class ChessDisplay:
 
 
     @staticmethod
-    def print_highlighted_all_legal_move(color, board, side = 1, castling_rights = {}):
+    def print_highlighted_all_legal_move(color, board, side = 1, castling_rights = {}, move_history = []):
         """
         Print the board with all legal moves highlighted.
 
@@ -1427,6 +1438,7 @@ class ChessDisplay:
             board (list): 2D list (8x8) representing the board.
             side (int): Side to move (WHITE=1 or BLACK=-1). Defaults to 1.
             castling_rights (set): Current castling rights. Defaults to empty.
+            move_history (list): List of previous moves. Defaults to empty.
         """
 
         start_highlight, end_highlight = ChessDisplay.color_to_code(color)
@@ -1439,7 +1451,7 @@ class ChessDisplay:
         board_rendu = [list(reversed([piece_note_style[e] for e in r])) for r in board] if side == 1 else [[piece_note_style[e] for e in r] for r in board]
 
         color_to_play = 1*side
-        list_move = MoveGen.list_all_legal_move(color_to_play, board, castling_rights=castling_rights)
+        list_move = MoveGen.list_all_legal_move(color_to_play, move_history, board, castling_rights=castling_rights)
         for e in list_move:
             board_rendu[e[0][0]][e[0][1]] = f"{start_highlight}{board_rendu[e[0][0]][e[0][1]]}{end_highlight}"
             board_rendu[e[1][0]][e[1][1]] = f"{start_highlight}{board_rendu[e[1][0]][e[1][1]]}{end_highlight}"
@@ -1559,12 +1571,12 @@ class ChessCore:
 
         # side_to_move has changed after a valid move
 
-        if GameState.is_checkmate(self.board.side_to_move, self.board.board):
+        if GameState.is_checkmate(self.board.side_to_move, self.board.board, self.board.move_history):
             ChessDisplay.print_game_over(self.board.side_to_move, self.board.board)
             self.party_over = True
             return 'checkmate'
         
-        legal_move = MoveGen.list_all_legal_move(WHITE, self.board.board, self.board.castling_rights) if self.board.side_to_move == WHITE else MoveGen.list_all_legal_move(BLACK, self.board.board, self.board.castling_rights)      
+        legal_move = MoveGen.list_all_legal_move(WHITE if self.board.side_to_move == WHITE else BLACK, self.board.move_history, self.board.board, castling_rights=self.board.castling_rights)      
 
         if legal_move == []:
             ChessDisplay.print_draw('stalemate', self.board.board, self.board.side_to_move*-1)
@@ -1600,15 +1612,15 @@ class ChessCore:
             str or None: 'checkmate', 'stalemate', or None if game continues.
         """
 
-        if GameState.is_checkmate(-1,self.board.board):
+        if GameState.is_checkmate(BLACK,self.board.board, self.board.move_history):
             ChessDisplay.print_game_over(WHITE ,self.board.board)
             return 'checkmate'
         
-        if GameState.is_checkmate(1,self.board.board):
+        if GameState.is_checkmate(WHITE,self.board.board, self.board.move_history):
             ChessDisplay.print_game_over(BLACK ,self.board.board)
             return 'checkmate'
         
-        legal_move = MoveGen.list_all_legal_move(WHITE, self.board.board) if self.board.side_to_move == BLACK else MoveGen.list_all_legal_move(BLACK, self.board.board)      
+        legal_move = MoveGen.list_all_legal_move(WHITE if self.board.side_to_move == BLACK else BLACK, self.board.move_history, self.board.board, castling_rights=self.board.castling_rights)      
 
         if legal_move == []:
             ChessDisplay.print_draw('stalemate', self.board.board, self.board.side_to_move)
