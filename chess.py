@@ -1,5 +1,8 @@
 from constants import *
 
+__version__ = "2.0.0"
+__author__ = "Leroux Lubin"
+
 class Board:
     def __init__(self):
         """Initialize the board with the standard starting position and game state."""
@@ -21,6 +24,10 @@ class Board:
 
         Returns:
             list: 2D list (8x8) representing the board.
+
+        Note:
+            The board format is designed so that we can obtain the piece at a precise coordinate by doing board[y+1][x+1].
+
         """
 
         return [
@@ -280,9 +287,6 @@ class MoveParser:
 
             end_value = board[y_end_coordinate][x_end_coordinate]
 
-            name_piece_coor1 = piece[start_value]
-            name_piece_coor2 = piece[end_value]
-
             if debug:
                 print("----move----")
                 print(f'{start_move} and {end_move}')
@@ -293,7 +297,6 @@ class MoveParser:
                 print()
                 print("----piece----")
                 print("start_value:",start_value,"end_value:",end_value)
-                print("start_value:",name_piece_coor1,"end_value:",name_piece_coor2)
                 print()
 
             move = {
@@ -305,8 +308,6 @@ class MoveParser:
                 "y_end_coordinate":y_end_coordinate,
                 "start_value":start_value,
                 "end_value":end_value,
-                "name_piece_coor1":name_piece_coor1,
-                "name_piece_coor2":name_piece_coor2
             }
 
             return move
@@ -374,8 +375,14 @@ class Validator:
         Returns:
             str: 'valid', 'illegal', 'en passant', or 'invalid'.
         """
+        
+        if move['start_value'] not in (PAWN, -PAWN):
+            return 'illegal'
 
-        if move['end_value'] == EMPTY: 
+        if move["end_value"] == EMPTY:
+            if (move['start_value'] > 0 and move['end_value'] > 0) or (move['start_value'] < 0 and move['end_value'] < 0):
+                return 'illegal'
+
             if move_history:
                 if (move['y_start_coordinate'] == 4 if move['start_value'] > 0 else move['y_start_coordinate'] == 3):
                     if board[move['y_start_coordinate']][move['x_end_coordinate']] == (-PAWN if move['start_value'] > 0 else PAWN):
@@ -387,8 +394,8 @@ class Validator:
                             if move_history[-1] == [[(move['y_start_coordinate']+2 if move['start_value'] > 0 else move['y_start_coordinate']-2),move['x_end_coordinate']],[move['y_start_coordinate'],move['x_end_coordinate']]]:
                                 return 'en passant'
                             
-            if move['x_end_coordinate'] == move['x_start_coordinate']: 
-                if move['name_piece_coor1'] == "white_pawn":     
+            if move['x_end_coordinate'] == move['x_start_coordinate']:
+                if move['start_value'] == PAWN: 
                     if (
                         move['y_end_coordinate'] == move['y_start_coordinate'] + 1
                         or (
@@ -407,7 +414,7 @@ class Validator:
                     else:
                         return 'illegal'
 
-                if move['name_piece_coor1'] == "black_pawn":
+                if move['start_value'] == -PAWN:
                     if (
                         move['y_start_coordinate'] == move['y_end_coordinate'] + 1
                         or (
@@ -424,48 +431,21 @@ class Validator:
                         return 'valid'
                     else:
                         return 'illegal'
-
-                if move['name_piece_coor1'] != "black_pawn" and move['name_piece_coor1'] != "white_pawn":
-                    return 'illegal'
                 
             else: 
                 return 'illegal'
 
-        elif move['end_value'] != EMPTY:
-            if move['name_piece_coor1'] == "white_pawn":
-                if move['end_value'] > 0:
-                    return 'illegal'
-                if (
-                    abs(move['x_end_coordinate'] - move['x_start_coordinate']) == 1
-                    and move['y_end_coordinate'] == move['y_start_coordinate'] + 1
-                ):
-                        if move['y_end_coordinate'] == 7:
-                            move["start_value"] = Validator.promote_pawn(WHITE, promotion_value=promotion_value, auto_promotion_value=auto_promotion_value)
-                            if move["start_value"] == 'invalid':
-                                return 'invalid'
-                            
-                        return 'valid'
-                
-                else:
-                    return 'illegal'
-
-
-            if move['name_piece_coor1'] == "black_pawn":
-                if move['end_value'] < 0:
-                    return('illegal')
-                if (
-                    abs(move['x_end_coordinate'] - move['x_start_coordinate']) == 1
-                    and move['y_end_coordinate'] == move['y_start_coordinate'] - 1
-                ):
-                    if move['y_end_coordinate'] == 0:
-                        move["start_value"] = Validator.promote_pawn(BLACK, promotion_value=promotion_value, auto_promotion_value=auto_promotion_value)
+        else:
+            if (
+                abs(move['x_end_coordinate'] - move['x_start_coordinate']) == 1
+                and move['y_end_coordinate'] == move['y_start_coordinate'] + (1 if move['start_value'] > 0 else -1) 
+            ):
+                    if move['y_end_coordinate'] == (7 if move['start_value'] > 0 else 0):
+                        move["start_value"] = Validator.promote_pawn(WHITE if move['start_value'] > 0 else BLACK, promotion_value=promotion_value, auto_promotion_value=auto_promotion_value)
                         if move["start_value"] == 'invalid':
                             return 'invalid'
                         
                     return 'valid'
-                
-                else:
-                    return 'illegal'
                 
             return 'illegal'
         
@@ -483,8 +463,8 @@ class Validator:
             str: 'valid' or 'illegal'.
         """
 
-        if (move['name_piece_coor1'] in ('black_bishop', 'black_queen') and move['end_value'] < 0) or \
-           (move['name_piece_coor1'] in ('white_bishop', 'white_queen') and move['end_value'] > 0):
+        if (move['start_value'] in (-BISHOP, -QUEEN) and move['end_value'] < 0) or \
+           (move['start_value'] in (BISHOP, QUEEN) and move['end_value'] > 0):
             return 'illegal'
         
         if abs(move['x_start_coordinate'] - move['x_end_coordinate']) == abs(move['y_start_coordinate'] - move['y_end_coordinate']):
@@ -687,7 +667,7 @@ class MoveGen:
         
         return list_p_move
     
-    
+
     @staticmethod
     def list_knight_move(y, x, board):
         """
