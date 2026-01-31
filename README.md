@@ -6,7 +6,7 @@ Chess.py is a chess game written in Python. This project allows you to play ches
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/Ewazer/chess.git
+   git clone https://github.com/ewazer/chesscore.git
    ```
 2. Access the project directory :
    ```sh
