@@ -1,4 +1,4 @@
-# Chess.py
+# ChessCore
 
 Chess.py is a chess game written in Python. This project allows you to play chess in the command line, with features for move validation and rule management.
 
