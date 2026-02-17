@@ -2,7 +2,7 @@
 
 > **Version 3.0.0** by Leroux Lubin
 
-ChessCore is an optimized chess engine, written entirely in **native Python** (no external dependencies required).
+ChessCore is an optimized chess core, written entirely in **native Python** (no external dependencies required).
 
 It uses a **bitboard** representation of the chess board coupled with **magic bitboards** for piece move generation, achieving near-maximum performance for native Python.
 
