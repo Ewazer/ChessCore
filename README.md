@@ -650,4 +650,4 @@ Contributions are welcome! Open a PR or an issue to discuss your changes.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the license. See the LICENSE file for details.
