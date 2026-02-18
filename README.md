@@ -229,6 +229,12 @@ undo = (move, from_piece, to_piece, castling_rights_prev, halfmove_count, en_pas
 
 Pseudo-legal and legal move generation. All methods are static.
 
+Each pseudo-legal move generator exists in two variants:
+- **`list_all_*`** — returns a `list[int]` of all moves (useful when the full list is needed)
+- **`gen_all_*`** — yields moves one by one via a generator (more memory-efficient, used internally by `list_all_legal_move` and `generate_all_moves`)
+
+#### Pseudo-legal move generators (list variant)
+
 | Method | Signature | Description |
 |---------|-----------|-------------|
 | `list_all_pawn_move(board_obj, color)` | `→ list[int]` | All pawn moves (advance, double advance, captures, en passant) |
@@ -238,8 +244,25 @@ Pseudo-legal and legal move generation. All methods are static.
 | `list_all_queen_move(board_obj, color)` | `→ list[int]` | All queen moves (rook + bishop combination) |
 | `list_all_king_move(board_obj, color, castling=True)` | `→ list[int]` | All king moves + castling |
 | `list_all_castling_move(board_obj, color)` | `→ list[int]` | Castling moves only |
+
+#### Pseudo-legal move generators (generator variant)
+
+| Method | Signature | Description |
+|---------|-----------|-------------|
+| `gen_all_pawn_move(board_obj, color)` | `→ Generator[int]` | Yields pawn moves one by one |
+| `gen_all_knight_move(board_obj, color)` | `→ Generator[int]` | Yields knight moves one by one |
+| `gen_all_bishop_move(board_obj, color)` | `→ Generator[int]` | Yields bishop moves one by one |
+| `gen_all_rook_move(board_obj, color)` | `→ Generator[int]` | Yields rook moves one by one |
+| `gen_all_queen_move(board_obj, color)` | `→ Generator[int]` | Yields queen moves one by one |
+| `gen_all_king_move(board_obj, color, castling=True)` | `→ Generator[int]` | Yields king moves + castling one by one |
+| `gen_all_castling_move(board_obj, color)` | `→ Generator[int]` | Yields castling moves one by one |
+
+#### Legal move methods
+
+| Method | Signature | Description |
+|---------|-----------|-------------|
 | `list_all_legal_move(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
-| `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
+| `generate_all_moves(board_obj, side, castling=True)` | `→ Generator[int]` | Legal move generator (yield, uses `gen_all_*` internally) |
 | `list_all_piece_move(board_obj, square, piece_value)` | `→ list[int]` | Moves of a specific piece from a square (only used by `print_highlighted_legal_move` in ChessDisplay) |
 
 **Common parameters:**
