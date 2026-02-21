@@ -352,6 +352,24 @@ The last 3 methods (`god_mode`, `commit`, `is_game_over`) are designed for use b
 
 Defined in `constants.py`:
 
+### Importing constants
+
+You can import constants in two ways:
+
+```python
+from chesscore import constant
+
+print(constant.PAWN)
+print(constant.CR_WK)
+```
+
+```python
+from chesscore import *
+
+print(PAWN)
+print(CR_WK)
+```
+
 ### Pieces
 
 | Constant | Value | Description |
