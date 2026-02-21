@@ -1,9 +1,20 @@
-from constants import *
+try:
+    from .constants import *
+except ImportError:
+    from constants import *
 
 __version__ = "3.0.1"
 __author__ = "Leroux Lubin"
 
+__all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay"]
+
 class Board:
+    __slots__ = (
+        'pawn', 'knight', 'bishop', 'rook', 'queen', 'king','board_occupied_squares', 'all_board_occupied_squares', 'king_square',
+        'move_history', 'side_to_move', 'counter_halfmove_without_capture','castling_rights', 'position_has_loaded', 'en_passant_square',
+        'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','start_coordinate', 'end_coordinate', 'start_value', 'end_value', 'capture_value'
+    )
+
     def __init__(self):
         """Initialize the board with the standard starting position and game state."""
 
@@ -277,7 +288,7 @@ class Board:
         return False
         
 
-    def get_piece_type(self, square) -> int | None:
+    def get_piece_type(self, square) -> "int | None":
         """
         Get the piece type on a given square.
 
@@ -306,7 +317,7 @@ class Board:
             return KING
         
 
-    def get_piece_type_with_mask(self, mask) -> int | None:
+    def get_piece_type_with_mask(self, mask) -> "int | None":
         """
         Get the piece type using a bitboard mask.
 
@@ -667,7 +678,7 @@ class Board:
             return False
 
 
-    def give_move_info(self) -> None | str:
+    def give_move_info(self) -> "None | str":
         """
         Extract move information.
     
@@ -727,31 +738,36 @@ class MoveGen:
             capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0]
 
             while move1:
-                to = (move1 & -move1).bit_length() - 1
-                move1 &= move1 - 1
-                append((to - 8) | (to << 6))
+                least_significant_bit = move1 & -move1
+                to = least_significant_bit.bit_length() - 1
+                move1 ^= least_significant_bit
+                append(to * 65 - 8)
 
             while move2:
-                to = (move2 & -move2).bit_length() - 1
-                move2 &= move2 - 1
-                append((to - 16) | (to << 6))
+                least_significant_bit = move2 & -move2
+                to = least_significant_bit.bit_length() - 1
+                move2 ^= least_significant_bit
+                append(to * 65 - 16)
 
             while capt1:
-                to = (capt1 & -capt1).bit_length() - 1
-                capt1 &= capt1 - 1
-                append((to - 7) | (to << 6))
+                least_significant_bit = capt1 & -capt1
+                to = least_significant_bit.bit_length() - 1
+                capt1 ^= least_significant_bit
+                append(to * 65 - 7)
 
             while capt2:
-                to = (capt2 & -capt2).bit_length() - 1
-                capt2 &= capt2 - 1
-                append((to - 9) | (to << 6))
+                least_significant_bit = capt2 & -capt2
+                to = least_significant_bit.bit_length() - 1
+                capt2 ^= least_significant_bit
+                append(to * 65 - 9)
 
             if en_passant_square:
                 en_passant_square_mask = 1 << en_passant_square
                 en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
                 while en_passant_square_attackers:
-                    from_ = (en_passant_square_attackers & -en_passant_square_attackers).bit_length() - 1
-                    en_passant_square_attackers &= en_passant_square_attackers - 1
+                    least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
+                    from_ = least_significant_bit.bit_length() - 1
+                    en_passant_square_attackers ^= least_significant_bit
                     append(from_ | (en_passant_square << 6))
 
         else:
@@ -766,129 +782,40 @@ class MoveGen:
             capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7]
 
             while move1:
-                to = (move1 & -move1).bit_length() - 1
-                move1 &= move1 - 1
-                append((to + 8) | (to << 6))
+                least_significant_bit = move1 & -move1
+                to = least_significant_bit.bit_length() - 1
+                move1 ^= least_significant_bit
+                append(to * 65 + 8)
 
             while move2:
-                to = (move2 & -move2).bit_length() - 1
-                move2 &= move2 - 1
-                append((to + 16) | (to << 6))
+                least_significant_bit = move2 & -move2
+                to = least_significant_bit.bit_length() - 1
+                move2 ^= least_significant_bit
+                append(to * 65 + 16)
 
             while capt1:
-                to = (capt1 & -capt1).bit_length() - 1
-                capt1 &= capt1 - 1
-                append((to + 7) | (to << 6))
+                least_significant_bit = capt1 & -capt1
+                to = least_significant_bit.bit_length() - 1
+                capt1 ^= least_significant_bit
+                append(to * 65 + 7)
 
             while capt2:
-                to = (capt2 & -capt2).bit_length() - 1
-                capt2 &= capt2 - 1
-                append((to + 9) | (to << 6))
+                least_significant_bit = capt2 & -capt2
+                to = least_significant_bit.bit_length() - 1
+                capt2 ^= least_significant_bit
+                append(to * 65 + 9)
 
             if en_passant_square:
                 en_passant_square_mask = 1 << en_passant_square
                 en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) << 7) | ((en_passant_square_mask & ~FILE_MASKS[7]) << 9))
                 while en_passant_square_attackers:
-                    from_ = (en_passant_square_attackers & -en_passant_square_attackers).bit_length() - 1
-                    en_passant_square_attackers &= en_passant_square_attackers - 1
+                    least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
+                    from_ = least_significant_bit.bit_length() - 1
+                    en_passant_square_attackers ^= least_significant_bit
                     append(from_ | (en_passant_square << 6))
 
         return list_p_move
-
-
-    def gen_all_pawn_move(board_obj, color) -> int:
-        """
-        Generate all valid pawn moves for the specified color, including en passant.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-
-        Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
-        """
-
-        all_occ = board_obj.all_board_occupied_squares
-        en_passant_square = board_obj.en_passant_square
-
-        if color == WHITE:
-            empty_board = (~all_occ) & U64
-            enemy_board = board_obj.board_occupied_squares[BLACK_INDEX]
-            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
-
-            move1 = (pawn_board << 8) & empty_board
-            move2 = ((move1 & RANK_MASKS[2]) << 8) & empty_board
-
-            capt1 = (pawn_board << 7) & enemy_board & ~FILE_MASKS[7]
-            capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0]
-
-            while move1:
-                to = (move1 & -move1).bit_length() - 1
-                move1 &= move1 - 1
-                yield (to - 8) | (to << 6)
-
-            while move2:
-                to = (move2 & -move2).bit_length() - 1
-                move2 &= move2 - 1
-                yield (to - 16) | (to << 6)
-
-            while capt1:
-                to = (capt1 & -capt1).bit_length() - 1
-                capt1 &= capt1 - 1
-                yield (to - 7) | (to << 6)
-
-            while capt2:
-                to = (capt2 & -capt2).bit_length() - 1
-                capt2 &= capt2 - 1
-                yield (to - 9) | (to << 6)  
-
-            if en_passant_square:
-                en_passant_square_mask = 1 << en_passant_square
-                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
-                while en_passant_square_attackers:
-                    from_ = (en_passant_square_attackers & -en_passant_square_attackers).bit_length() - 1
-                    en_passant_square_attackers &= en_passant_square_attackers - 1
-                    yield from_ | (en_passant_square << 6)
-
-        else:
-            empty_board = (~all_occ) & U64
-            enemy_board = board_obj.board_occupied_squares[WHITE_INDEX]
-            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
-
-            move1 = (pawn_board >> 8) & empty_board
-            move2 = ((move1 & RANK_MASKS[5]) >> 8) & empty_board
-
-            capt1 = (pawn_board >> 7) & enemy_board & ~FILE_MASKS[0]
-            capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7]
-
-            while move1:
-                to = (move1 & -move1).bit_length() - 1
-                move1 &= move1 - 1
-                yield (to + 8) | (to << 6)
-
-            while move2:
-                to = (move2 & -move2).bit_length() - 1
-                move2 &= move2 - 1
-                yield (to + 16) | (to << 6)
-
-            while capt1:
-                to = (capt1 & -capt1).bit_length() - 1
-                capt1 &= capt1 - 1
-                yield (to + 7) | (to << 6)
-
-            while capt2:
-                to = (capt2 & -capt2).bit_length() - 1
-                capt2 &= capt2 - 1
-                yield (to + 9) | (to << 6)
-
-            if en_passant_square:
-                en_passant_square_mask = 1 << en_passant_square
-                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) << 7) | ((en_passant_square_mask & ~FILE_MASKS[7]) << 9))
-                while en_passant_square_attackers:
-                    from_ = (en_passant_square_attackers & -en_passant_square_attackers).bit_length() - 1
-                    en_passant_square_attackers &= en_passant_square_attackers - 1
-                    yield from_ | (en_passant_square << 6)
-
+    
 
     def list_all_knight_move(board_obj, color) -> list[int]:
         """
@@ -903,6 +830,7 @@ class MoveGen:
         """
 
         list_k_move = []
+        append = list_k_move.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
         
@@ -921,41 +849,9 @@ class MoveGen:
                 to = least_significant_bit2.bit_length() - 1
                 to_possibilities &= to_possibilities - 1
 
-                list_k_move.append(from_ | (to << 6))
+                append(from_ | (to << 6))
 
         return list_k_move
-    
-
-    def gen_all_knight_move(board_obj, color) -> int:
-        """
-        Generate all valid knight moves for the specified color.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-
-        Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
-        """
-
-        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
-        
-        knight_board = board_obj.knight & own_occupied_squares
-        
-        free_squares = (~own_occupied_squares) & U64 
-
-        while knight_board:
-            least_significant_bit = knight_board & -knight_board
-            from_ = least_significant_bit.bit_length() - 1
-            knight_board &= knight_board - 1
-
-            to_possibilities = KNIGHT_TABLE[from_] & free_squares
-            while to_possibilities:
-                least_significant_bit2 = to_possibilities & -to_possibilities
-                to = least_significant_bit2.bit_length() - 1
-                to_possibilities &= to_possibilities - 1
-
-                yield from_ | (to << 6)
 
 
     @staticmethod
@@ -972,6 +868,7 @@ class MoveGen:
         """
 
         list_r_move = []
+        append = list_r_move.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -995,49 +892,10 @@ class MoveGen:
                 to = least_significant_bit2.bit_length() - 1
                 to_possibilities &= to_possibilities - 1
 
-                list_r_move.append(from_ | (to << 6))
+                append(from_ | (to << 6))
         
         return list_r_move
     
-
-
-    @staticmethod
-    def gen_all_rook_move(board_obj, color) -> int:
-        """
-        Generate all valid rook moves for the specified color.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-
-        Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
-        """
-
-        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
-
-        rook = board_obj.rook & own_occupied_squares
-        free_squares = (~own_occupied_squares) & U64 
-
-        occ = board_obj.all_board_occupied_squares
-
-        while rook:
-            least_significant_bit = rook & -rook
-            from_ = least_significant_bit.bit_length() - 1
-
-            rook &= rook - 1
-            
-            occ_rel = occ & ROOK_MASK[from_]
-            idx = ((occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
-            
-            to_possibilities = ROOK_TABLE[from_][idx] & free_squares
-            while to_possibilities:
-                least_significant_bit2 = to_possibilities & -to_possibilities
-                to = least_significant_bit2.bit_length() - 1
-                to_possibilities &= to_possibilities - 1
-
-                yield from_ | (to << 6)
-
 
     @staticmethod
     def list_all_bishop_move(board_obj, color) -> list[int]:
@@ -1053,6 +911,7 @@ class MoveGen:
         """
 
         list_b_move = []
+        append = list_b_move.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -1076,47 +935,9 @@ class MoveGen:
                 to = least_significant_bit2.bit_length() - 1
                 to_possibilities &= to_possibilities - 1
 
-                list_b_move.append(from_ | (to << 6))
+                append(from_ | (to << 6))
         
         return list_b_move
-    
-
-    @staticmethod
-    def gen_all_bishop_move(board_obj, color) -> int:
-        """
-        Generate all valid bishop moves for the specified color.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-
-        Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
-        """
-
-        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
-
-        bishop = board_obj.bishop & own_occupied_squares
-        free_squares = (~own_occupied_squares) & U64 
-
-        occ = board_obj.all_board_occupied_squares
-
-        while bishop:
-            least_significant_bit = bishop & -bishop
-            from_ = least_significant_bit.bit_length() - 1
-
-            bishop &= bishop - 1
-            
-            occ_rel = occ & BISHOP_MASK[from_]
-            idx = ((occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
-            
-            to_possibilities = BISHOP_TABLE[from_][idx] & free_squares
-            while to_possibilities:
-                least_significant_bit2 = to_possibilities & -to_possibilities
-                to = least_significant_bit2.bit_length() - 1
-                to_possibilities &= to_possibilities - 1
-
-                yield from_ | (to << 6)
     
 
     @staticmethod
@@ -1133,6 +954,7 @@ class MoveGen:
         """
 
         list_q_move = []
+        append = list_q_move.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -1160,52 +982,10 @@ class MoveGen:
                 to = least_significant_bit2.bit_length() - 1
                 to_possibilities &= to_possibilities - 1
 
-                list_q_move.append(from_ | (to << 6))
+                append(from_ | (to << 6))
 
         return list_q_move
-    
 
-    @staticmethod
-    def gen_all_queen_move(board_obj, color) -> int:
-        """
-        Generate all queen bishop moves for the specified color.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-
-        Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
-        """
-
-        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
-
-        queen = board_obj.queen & own_occupied_squares
-        free_squares = (~own_occupied_squares) & U64 
-
-        occ = board_obj.all_board_occupied_squares
-
-        while queen:
-            least_significant_bit = queen & -queen
-            from_ = least_significant_bit.bit_length() - 1
-
-            queen &= queen - 1
-            
-            bishop_occ_rel = occ & BISHOP_MASK[from_]
-            bishop_idx = ((bishop_occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
-            
-            rook_occ_rel = occ & ROOK_MASK[from_]
-            rook_idx = ((rook_occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
-
-            to_possibilities = (ROOK_TABLE[from_][rook_idx] | BISHOP_TABLE[from_][bishop_idx]) & free_squares
-
-            while to_possibilities:
-                least_significant_bit2 = to_possibilities & -to_possibilities
-                to = least_significant_bit2.bit_length() - 1
-                to_possibilities &= to_possibilities - 1
-
-                yield from_ | (to << 6)
-    
 
     @staticmethod
     def list_all_king_move(board_obj, color, castling=True) -> list[int]:
@@ -1243,42 +1023,6 @@ class MoveGen:
             list_k_move.extend(MoveGen.list_all_castling_move(board_obj, color))
 
         return list_k_move
-    
-
-    @staticmethod
-    def gen_all_king_move(board_obj, color, castling=True) -> int:
-        """
-        Generate all king moves for the specified color.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-            castling (optional bool): Whether to include castling moves. Defaults to True.
-
-        Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
-        """
-
-        list_k_move = []
-
-        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
-
-        king_board = board_obj.king & own_occupied_squares
-
-        free_squares = (~own_occupied_squares) & U64 
-
-        from_ = king_board.bit_length() - 1
-
-        to_possibilities = KING_TABLE[from_] & free_squares
-        while to_possibilities:
-            least_significant_bit2 = to_possibilities & -to_possibilities
-            to = least_significant_bit2.bit_length() - 1
-            to_possibilities &= to_possibilities - 1
-
-            yield from_ | (to << 6)
-
-        if castling:
-            yield from MoveGen.gen_all_castling_move(board_obj, color)
     
     
     @staticmethod
@@ -1334,87 +1078,41 @@ class MoveGen:
 
 
     @staticmethod
-    def gen_all_castling_move(board_obj, color) -> int:
-        """
-        Generate all castling moves for the specified color.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (int): Piece color (WHITE=1 or BLACK=-1).
-
-        Yields:
-            int: Encoded castling moves as (from_square | (to_square << 6)).
-        """
-
-        rights = board_obj.castling_rights
-        all_board_occupied_squares = board_obj.all_board_occupied_squares
-        attackers_to = GameState.attackers_to
-
-        if color == WHITE:
-            can_kingside = (rights & CR_WK) and (all_board_occupied_squares & WK_EMPTY) == 0
-            can_queenside = (rights & CR_WQ) and (all_board_occupied_squares & WQ_EMPTY) == 0
-            if not (can_kingside or can_queenside):
-                return
-
-            if attackers_to(board_obj, WHITE, 4):
-                return
-
-            if can_kingside and not attackers_to(board_obj, WHITE, 5):
-                yield 4 | (6 << 6)
-
-            if can_queenside and not attackers_to(board_obj, WHITE, 3):
-                yield 4 | (2 << 6)
-
-        else:
-            can_kingside = (rights & CR_BK) and (all_board_occupied_squares & BK_EMPTY) == 0
-            can_queenside = (rights & CR_BQ) and (all_board_occupied_squares & BQ_EMPTY) == 0
-            if not (can_kingside or can_queenside):
-                return
-
-            if attackers_to(board_obj, BLACK, 60):
-                return
-
-            if can_kingside and not attackers_to(board_obj, BLACK, 61):
-                yield 60 | (62 << 6)
-
-            if can_queenside and not attackers_to(board_obj, BLACK, 59):
-                yield 60 | (58 << 6)
-
-
-    @staticmethod
-    def list_all_legal_move(board_obj, side, castling=True) -> list[int]:
+    def list_all_legal_move(board_obj, side, castling = True) -> list[int]:
         """
         Generate all legal moves for a side (excluding moves leaving king in check).
-
+        
         Args:
             board_obj (object): Board object with bitboard attributes.
             side (int): Side color (WHITE=1 or BLACK=-1).
             castling (bool, optional): Whether to include castling moves. Defaults to True.
-
+        
         Returns:
-            list: Encoded moves as (from_square | (to_square << 6)).
+            list: Encoded castling moves as (from_square | (to_square << 6)).
         """
-
+        
         list_all_move = []
         append = list_all_move.append
 
         make = board_obj.make_move
         unmake = board_obj.unmake_move
         attackers_to = GameState.attackers_to
+        king_square = board_obj.king_square
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
 
         gens = (
-            MoveGen.gen_all_pawn_move,
-            MoveGen.gen_all_knight_move,
-            MoveGen.gen_all_bishop_move,
-            MoveGen.gen_all_rook_move,
-            MoveGen.gen_all_queen_move,
-            lambda b, s: MoveGen.gen_all_king_move(b, s, castling),
+            MoveGen.list_all_pawn_move,
+            MoveGen.list_all_knight_move,
+            MoveGen.list_all_bishop_move,
+            MoveGen.list_all_rook_move,
+            MoveGen.list_all_queen_move,
+            lambda b, s: MoveGen.list_all_king_move(b, s, castling),
         )
 
         for gen in gens:
             for mv in gen(board_obj, side):
                 undo = make(mv, side)
-                if not attackers_to(board_obj, side, board_obj.king_square[WHITE_INDEX if side == WHITE else BLACK_INDEX]):
+                if not attackers_to(board_obj, side, king_square[INDEX]):
                     append(mv)
                 unmake(undo, side)
 
@@ -1422,7 +1120,7 @@ class MoveGen:
 
 
     @staticmethod
-    def generate_all_moves(board_obj, side, castling = True) -> int:
+    def generate_all_moves(board_obj, side, castling = True):
         """
         Generate all legal moves for a side (excluding moves leaving king in check).
         
@@ -1432,38 +1130,60 @@ class MoveGen:
             castling (bool, optional): Whether to include castling moves. Defaults to True.
         
         Yields:
-            int: Encoded moves as (from_square | (to_square << 6)).
+            generator: Yields encoded moves as (from_square | (to_square << 6)).
         """
 
         make = board_obj.make_move
         unmake = board_obj.unmake_move
         attackers_to = GameState.attackers_to
+        king_square = board_obj.king_square
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
 
-        gens = (
-            lambda b, s: MoveGen.gen_all_king_move(b, s, castling),
-            MoveGen.gen_all_queen_move,
-            MoveGen.gen_all_knight_move,
-            MoveGen.gen_all_bishop_move,
-            MoveGen.gen_all_rook_move,
-            MoveGen.gen_all_pawn_move,
-        )
+        for e in MoveGen.list_all_king_move(board_obj, side, castling):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
 
-        for gen in gens:
-            for e in gen(board_obj, side):
-                undo = make(e, side)
-                if not attackers_to(
-                    board_obj,
-                    side,
-                    board_obj.king_square[WHITE_INDEX if side == WHITE else BLACK_INDEX],
-                ):
-                    unmake(undo, side)
-                    yield e
-                else:
-                    unmake(undo, side)
+        for e in MoveGen.list_all_queen_move(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+        
+        for e in MoveGen.list_all_knight_move(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+    
+        for e in MoveGen.list_all_bishop_move(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_rook_move(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+        
+        for e in MoveGen.list_all_pawn_move(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
 
 
     @staticmethod
-    def list_all_piece_move(board_obj, square, piece_value):
+    def list_all_piece_move(board_obj, square, piece_value) -> list[int]:
         """
         Generate all moves for a specific piece.
 
@@ -1598,8 +1318,33 @@ class GameState:
             bool: True if the move is legal, False otherwise.
         """
 
-        return any(move == encoded_move for move in MoveGen.generate_all_moves(board_obj, board_obj.side_to_move))
+        side = board_obj.side_to_move
+        from_sq = encoded_move & 0x3F
+        mask = SQUARE_MASK[from_sq]
 
+        if board_obj.pawn & mask:
+            pseudo_moves = MoveGen.list_all_pawn_move(board_obj, side)
+        elif board_obj.knight & mask:
+            pseudo_moves = MoveGen.list_all_knight_move(board_obj, side)
+        elif board_obj.bishop & mask:
+            pseudo_moves = MoveGen.list_all_bishop_move(board_obj, side)
+        elif board_obj.rook & mask:
+            pseudo_moves = MoveGen.list_all_rook_move(board_obj, side)
+        elif board_obj.queen & mask:
+            pseudo_moves = MoveGen.list_all_queen_move(board_obj, side)
+        elif board_obj.king & mask:
+            pseudo_moves = MoveGen.list_all_king_move(board_obj, side)
+        else:
+            return False
+
+        if encoded_move not in pseudo_moves:
+            return False
+
+        undo = board_obj.make_move(encoded_move, side)
+        king_square = board_obj.king_square[WHITE_INDEX if side == WHITE else BLACK_INDEX]
+        in_check = GameState.attackers_to(board_obj, side, king_square)
+        board_obj.unmake_move(undo, side)
+        return not in_check
 
 
 class ChessDisplay:
@@ -1984,7 +1729,7 @@ class ChessCore:
         self.party_over = False
     
 
-    def launch_game(self, side="white", enable_print = True) -> None:
+    def start_new_game(self, side="white", enable_print = True) -> None:
         """
         Start a new chess game.
 
@@ -2085,9 +1830,7 @@ class ChessCore:
 
         self.board.add_to_history()
         
-        legal_move = MoveGen.list_all_legal_move(self.board, self.board.side_to_move)
-
-        if not legal_move:
+        if not any(MoveGen.generate_all_moves(self.board, self.board.side_to_move)):
             if GameState.attackers_to(self.board, self.board.side_to_move, self.board.king_square[WHITE_INDEX if self.board.side_to_move == WHITE else BLACK_INDEX]):
                 ChessDisplay.print_game_over(self.board, self.board.side_to_move * -1)
                 self.party_over = True
@@ -2119,7 +1862,7 @@ class ChessCore:
         return 'valid'
     
 
-    def check_loaded_position(self) -> str | None:
+    def check_loaded_position(self) -> "str | None":
         """
         Check if a loaded position is checkmate or stalemate.
         
@@ -2137,7 +1880,7 @@ class ChessCore:
         
         legal_move = MoveGen.list_all_legal_move(self.board, WHITE if self.board.side_to_move == BLACK else BLACK)      
 
-        if legal_move == []:
+        if not legal_move:
             ChessDisplay.print_draw(self.board,  self.board.side_to_move*-1, 'stalemate')
             return 'draw'
         
@@ -2164,13 +1907,7 @@ class ChessCore:
                (self.board.start_value == -PAWN and self.board.end_coordinate <= 7):
                 promotion_piece = self.promotion_value if self.promotion_value else QUEEN
         
-        undo = self.board.make_move(self.board.encoded_move_in_progress, side, promotion_piece)
-
-        if GameState.attackers_to(self.board, side, self.board.king_square[WHITE_INDEX if side == WHITE else BLACK_INDEX]):
-            self.board.unmake_move(undo, side)
-            ChessDisplay.print_invalid_move("Move leaves king in check.")
-            return False
-        
+        self.board.make_move(self.board.encoded_move_in_progress, side, promotion_piece)
         self.board.change_side()
 
         return True
@@ -2184,10 +1921,10 @@ class ChessCore:
             side (str, optional): Starting side ('white' or 'black'). Defaults to 'white'.
 
         Returns:
-            str: 'checkmate', 'pat', or 'draw' when game ends.
+            str: 'checkmate' or 'draw' when game ends.
         """
 
-        self.launch_game(side=side)
+        self.start_new_game(side=side)
         
         while True:
             all_move = input("> ")
@@ -2199,7 +1936,7 @@ class ChessCore:
                 return 'draw'
 
     
-    def god_mode(self, move):
+    def god_mode(self, move) -> None:
         """
         Apply a move without any checks (for testing or AI purposes).
 
@@ -2230,7 +1967,7 @@ class ChessCore:
         self.board.add_to_history()
             
     
-    def is_game_over(self) -> bool | str:
+    def is_game_over(self) -> "bool | str":
         """
         Check if the game is over due to checkmate, stalemate, threefold repetition, fifty-move rule, or insufficient material.
 
@@ -2238,12 +1975,12 @@ class ChessCore:
             bool or str: 'checkmate', 'draw', or False if the game is not over.
         """
 
-        legal_move = MoveGen.list_all_legal_move(self.board, WHITE if self.board.side_to_move == WHITE else BLACK) 
+        is_in_check = GameState.attackers_to(self.board, self.board.side_to_move, self.board.king_square[WHITE_INDEX if self.board.side_to_move == WHITE else BLACK_INDEX])
 
-        if not legal_move:
-            if GameState.attackers_to(self.board, self.board.side_to_move, self.board.king_square[WHITE_INDEX if self.board.side_to_move == WHITE else BLACK_INDEX]):
-                return 'checkmate'
-            return 'draw'
+        has_moves = any(MoveGen.generate_all_moves(self.board, self.board.side_to_move))
+
+        if not has_moves:
+            return 'checkmate' if is_in_check else 'draw'
 
         if GameState.check_repetition(self.board):
             return 'draw'
@@ -2257,7 +1994,7 @@ class ChessCore:
         return False
     
 
-    def commit(self, move) -> str | None:
+    def commit(self, move) -> "str":
         """
         Commit a move without legality checks (for AI or testing purposes).
         Returns the game outcome if the game is finished.
@@ -2265,7 +2002,7 @@ class ChessCore:
         Args:
             move (str): Move string (e.g., "e2 e4", or "e7 e8q" for promotion).
 
-        Returns:*
+        Returns:
             str or None: 'checkmate', 'draw' if game ends, or None if game continues.
         """
 
@@ -2278,8 +2015,3 @@ class ChessCore:
             return outcome
 
         return None
-    
-
-if __name__ == "__main__":
-    process = ChessCore()
-    process.play()

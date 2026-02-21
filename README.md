@@ -70,7 +70,7 @@ Enter your moves in the format `[start_square] [target_square]`:
 from chess_game import ChessCore
 
 game = ChessCore()
-game.launch_game(side="white")
+game.start_new_game(side="white")
 
 result = game.play_move("e2 e4")
 result = game.play_move("e7 e5")
@@ -229,12 +229,6 @@ undo = (move, from_piece, to_piece, castling_rights_prev, halfmove_count, en_pas
 
 Pseudo-legal and legal move generation. All methods are static.
 
-Each pseudo-legal move generator exists in two variants:
-- **`list_all_*`** — returns a `list[int]` of all moves (useful when the full list is needed)
-- **`gen_all_*`** — yields moves one by one via a generator (more memory-efficient, used internally by `list_all_legal_move` and `generate_all_moves`)
-
-#### Pseudo-legal move generators (list variant)
-
 | Method | Signature | Description |
 |---------|-----------|-------------|
 | `list_all_pawn_move(board_obj, color)` | `→ list[int]` | All pawn moves (advance, double advance, captures, en passant) |
@@ -244,25 +238,8 @@ Each pseudo-legal move generator exists in two variants:
 | `list_all_queen_move(board_obj, color)` | `→ list[int]` | All queen moves (rook + bishop combination) |
 | `list_all_king_move(board_obj, color, castling=True)` | `→ list[int]` | All king moves + castling |
 | `list_all_castling_move(board_obj, color)` | `→ list[int]` | Castling moves only |
-
-#### Pseudo-legal move generators (generator variant)
-
-| Method | Signature | Description |
-|---------|-----------|-------------|
-| `gen_all_pawn_move(board_obj, color)` | `→ Generator[int]` | Yields pawn moves one by one |
-| `gen_all_knight_move(board_obj, color)` | `→ Generator[int]` | Yields knight moves one by one |
-| `gen_all_bishop_move(board_obj, color)` | `→ Generator[int]` | Yields bishop moves one by one |
-| `gen_all_rook_move(board_obj, color)` | `→ Generator[int]` | Yields rook moves one by one |
-| `gen_all_queen_move(board_obj, color)` | `→ Generator[int]` | Yields queen moves one by one |
-| `gen_all_king_move(board_obj, color, castling=True)` | `→ Generator[int]` | Yields king moves + castling one by one |
-| `gen_all_castling_move(board_obj, color)` | `→ Generator[int]` | Yields castling moves one by one |
-
-#### Legal move methods
-
-| Method | Signature | Description |
-|---------|-----------|-------------|
 | `list_all_legal_move(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
-| `generate_all_moves(board_obj, side, castling=True)` | `→ Generator[int]` | Legal move generator (yield, uses `gen_all_*` internally) |
+| `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
 | `list_all_piece_move(board_obj, square, piece_value)` | `→ list[int]` | Moves of a specific piece from a square (only used by `print_highlighted_legal_move` in ChessDisplay) |
 
 **Common parameters:**
@@ -337,7 +314,7 @@ game = ChessCore()
 
 | Method | Signature | Description |
 |---------|-----------|-------------|
-| `launch_game(side, enable_print)` | `side: str, enable_print: bool → None` | Initializes a game (`"white"` or `"black"`, display on/off) |
+| `start_new_game(side, enable_print)` | `side: str, enable_print: bool → None` | Initializes a game (`"white"` or `"black"`, display on/off) |
 | `reset_game()` | `→ None` | Completely resets the game |
 | `load_board(fen_string)` | `fen_string: str → None` | Loads a FEN position |
 | `play_move(all_move, print_move)` | `all_move: str, print_move: bool → str` | Plays a move with full validation |
@@ -511,7 +488,7 @@ game.play(side="black")
 from chess_game import ChessCore
 
 game = ChessCore()
-game.launch_game(side="white")
+game.start_new_game(side="white")
 
 moves = ["e2 e4", "e7 e5", "g1 f3", "b8 c6", "f1 b5"]
 for move in moves:
@@ -528,7 +505,7 @@ from chess_game import ChessCore
 
 game = ChessCore()
 game.load_board("rnbqkbnr/ppp2ppp/8/3pp3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq e6 0 3")
-game.launch_game(side="white")
+game.start_new_game(side="white")
 
 result = game.play_move("f1 b5")
 ```
@@ -539,7 +516,7 @@ result = game.play_move("f1 b5")
 from chess_game import ChessCore
 
 engine = ChessCore()
-engine.launch_game(side="white", enable_print=False)
+engine.start_new_game(side="white", enable_print=False)
 
 result = engine.play_move("e2 e4", print_move=False)
 result = engine.play_move("e7 e5", print_move=False)
@@ -551,7 +528,7 @@ result = engine.play_move("e7 e5", print_move=False)
 from chess_game import ChessCore
 
 engine = ChessCore()
-engine.launch_game(side="white", enable_print=False)
+engine.start_new_game(side="white", enable_print=False)
 
 # commit() does not verify move legality, but returns the game state after the move.
 outcome = engine.commit("e2 e4")    # → None 
@@ -569,7 +546,7 @@ outcome = engine.commit("h5 f7")    # → 'checkmate'
 from chess_game import ChessCore
 
 engine = ChessCore()
-engine.launch_game(side="white", enable_print=False)
+engine.start_new_game(side="white", enable_print=False)
 
 # Applies a move without any return
 engine.god_mode("e2 e4")

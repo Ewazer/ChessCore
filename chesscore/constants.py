@@ -55,9 +55,10 @@ SQUARE_MASK = [1 << square for square in range(64)]
 U64 = (1 << 64) - 1
 
 
+import os
 import json
 
-with open("data/magic_bitboards.json", "r") as f:
+with open(os.path.join(os.path.dirname(__file__), 'data', 'magic_bitboards.json'), "r") as f:
     magic_data = json.load(f)
 
 ROOK_MASK = [int(magic_data["rook_magics"][i]["mask"], 16) for i in range(64)]
