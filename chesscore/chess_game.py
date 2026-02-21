@@ -1,12 +1,14 @@
 try:
     from .constants import *
+    from .constants import __all__ as _constants_all
 except ImportError:
     from constants import *
+    from constants import __all__ as _constants_all
 
 __version__ = "3.0.1"
 __author__ = "Leroux Lubin"
 
-__all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay"]
+__all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay", *_constants_all]
 
 class Board:
     __slots__ = (
