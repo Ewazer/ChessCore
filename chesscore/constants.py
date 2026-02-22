@@ -51,11 +51,11 @@ EMPTY  = 0
 
 
 PAWN = 1
-KNIGHT = 3
-BISHOP = 4
-ROOK = 5
-QUEEN = 9
-KING = 7
+KNIGHT = 2
+BISHOP = 3
+ROOK = 4
+QUEEN = 5
+KING = 6
 
 
 WHITE = 1
