@@ -176,7 +176,7 @@ Initializes the board in the starting position.
 | Attribute | Type | Description |
 |----------|------|-------------|
 | `pawn`, `knight`, `bishop`, `rook`, `queen`, `king` | `int` | Bitboards per piece type |
-| `board_occupied_squares` | `list[int]` | `[white, black]` occupancy bitboards by color |
+| `board_occupied_squares` | `list[int]` | `[white, black]` — occupancy bitboards by color |
 | `all_board_occupied_squares` | `int` | Union of all pieces |
 | `king_square` | `list[int]` | `[white_king_square, black_king_square]` |
 | `side_to_move` | `int` | `WHITE` (1) or `BLACK` (-1) |
@@ -379,8 +379,8 @@ print(CR_WK)
 | `KNIGHT` | `3` | Knight |
 | `BISHOP` | `4` | Bishop |
 | `ROOK` | `5` | Rook |
-| `KING` | `7` | King |
-| `QUEEN` | `9` | Queen |
+| `KING` | `6` | King |
+| `QUEEN` | `7` | Queen |
 
 > Black pieces are represented by the negative value.
 
@@ -419,7 +419,7 @@ print(CR_WK)
 | `FILE_MASKS[8]` | File masks |
 | `SQUARES` | Dictionary `{"a1": 0, ..., "h8": 63}` |
 | `INVERSE_SQUARES` | Inverse dictionary `{0: "a1", ..., 63: "h8"}` |
-| `U64` | `(1 << 64) - 1` 64-bit mask |
+| `U64` | `(1 << 64) - 1` — 64-bit mask |
 
 ---
 
