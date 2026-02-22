@@ -5,7 +5,7 @@ except ImportError:
     from constants import *
     from constants import __all__ as _constants_all
 
-__version__ = "3.0.2"
+__version__ = "3.0.1"
 __author__ = "Leroux Lubin"
 
 __all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay", *_constants_all]
@@ -2017,3 +2017,10 @@ class ChessCore:
             return outcome
 
         return None
+
+
+if __name__ == "__main__":
+    process = ChessCore()
+    process.play()
+
+# yes, we are in 2026 :=)
