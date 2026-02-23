@@ -1,6 +1,6 @@
 # ChessCore
 
-> **Version 3.0.2** by Leroux Lubin
+> **Version 3.0.3** by Leroux Lubin
 
 ChessCore is an optimized chess core, written entirely in **native Python** (no external dependencies required).
 
@@ -185,6 +185,9 @@ Initializes the board in the starting position.
 | `counter_halfmove_without_capture` | `int` | Half-move counter without capture (50-move rule) |
 | `move_history` | `list[int]` | Encoded move history (see [Move Encoding](#move-encoding)) |
 | `position_hash_history` | `dict` | Occurrence counter for each position |
+| `mg_score` | `int` | Incremental middlegame evaluation score (for engine use) |
+| `eg_score` | `int` | Incremental endgame evaluation score (for engine use) |
+| `phase` | `int` | Incremental game phase counter (for engine use) |
 
 #### Methods
 
@@ -197,6 +200,8 @@ Initializes the board in the starting position.
 | `get_piece_type_and_color(square)` | `square: int → int` | Returns the signed type (positive=white, negative=black, 0=empty) |
 | `make_move(move, side, promotion_piece)` | `move: int, side: int, promotion_piece: int → tuple` | Applies a move and returns an undo tuple |
 | `unmake_move(undo, side)` | `undo: tuple, side: int → None` | Undoes a move using the undo tuple |
+| `make_move_search(move, side, promotion_piece)` | `move: int, side: int, promotion_piece: int → tuple` | Like `make_move` but also updates `mg_score`, `eg_score`, `phase` incrementally — optimized for engine search |
+| `unmake_move_search(undo, side)` | `undo: tuple, side: int → None` | Like `unmake_move` but also restores `mg_score`, `eg_score`, `phase` from the undo tuple |
 | `move_parser(move_str)` | `move_str: str → int` | Parses `"e2 e4"` into an encoded move |
 | `parse_move_and_validate(all_move)` | `all_move: str → bool` | Parses and validates a move, stores in `encoded_move_in_progress` |
 | `give_move_info()` | `→ None \| str` | Extracts info from the current move. `None` = valid, `str` = invalidity reason |
@@ -224,6 +229,27 @@ undo = (move, from_piece, to_piece, castling_rights_prev, halfmove_count, en_pas
 | 4 | Half-move counter before the move | `int` |
 | 5 | En passant square before the move | `int` |
 | 6 | Promotion piece (or `0`) | `int` |
+
+#### Search Undo Tuple (`undo` — search variant)
+
+Returned by `make_move_search()`, used by `unmake_move_search()`. Contains three additional fields for incremental evaluation:
+
+```python
+undo = (move, from_piece, to_piece, castling_rights_prev, halfmove_count, en_passant_prev, promotion_piece, mg_score, eg_score, phase)
+```
+
+| Index | Content | Type |
+|-------|---------|------|
+| 0 | Encoded move | `int` |
+| 1 | Moving piece type | `int` |
+| 2 | Captured piece type (or `None`) | `int \| None` |
+| 3 | Castling rights before the move | `int` |
+| 4 | Half-move counter before the move | `int` |
+| 5 | En passant square before the move | `int` |
+| 6 | Promotion piece (or `0`) | `int` |
+| 7 | `mg_score` before the move | `int` |
+| 8 | `eg_score` before the move | `int` |
+| 9 | `phase` before the move | `int` |
 
 ---
 
@@ -401,6 +427,19 @@ print(CR_WK)
 | `CR_WQ` | `2` | White queenside castling |
 | `CR_BK` | `4` | Black kingside castling |
 | `CR_BQ` | `8` | Black queenside castling |
+
+### Engine Constants
+
+| Constant | Value | Description |
+|-----------|--------|-------------|
+| `MG_INDEX` | `0` | Index for middlegame phase in PST and piece-value tuples |
+| `EG_INDEX` | `1` | Index for endgame phase in PST and piece-value tuples |
+| `PAWN_VALUE` | `(128, 213)` | Pawn material value `(mg, eg)` |
+| `KNIGHT_VALUE` | `(781, 854)` | Knight material value `(mg, eg)` |
+| `BISHOP_VALUE` | `(825, 915)` | Bishop material value `(mg, eg)` |
+| `ROOK_VALUE` | `(1276, 1380)` | Rook material value `(mg, eg)` |
+| `QUEEN_VALUE` | `(2538, 2682)` | Queen material value `(mg, eg)` |
+| `pst` | `tuple` | Piece-Square Tables indexed by `pst[piece_type][MG_INDEX\|EG_INDEX][square]`. Material values are already included. |
 
 ### Pre-calculated Tables
 
@@ -627,6 +666,10 @@ for move in MoveGen.generate_all_moves(board, WHITE):
     
     board.unmake_move(undo, WHITE)  # Restoration of exact state
 ```
+
+### Make / Unmake Search (incremental evaluation)
+
+`make_move_search` / `unmake_move_search` maintain `mg_score`, `eg_score`, and `phase` incrementally, no need to recompute the full evaluation at each node. Must be initialized before use (e.g., by computing scores from scratch once at the root).
 
 ---
 
