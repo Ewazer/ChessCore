@@ -233,14 +233,14 @@ Pseudo-legal and legal move generation. All methods are static.
 
 | Method | Signature | Description |
 |---------|-----------|-------------|
-| `list_all_pawn_move(board_obj, color)` | `→ list[int]` | All pawn moves (advance, double advance, captures, en passant) |
-| `list_all_knight_move(board_obj, color)` | `→ list[int]` | All knight moves |
-| `list_all_bishop_move(board_obj, color)` | `→ list[int]` | All bishop moves (magic bitboards) |
-| `list_all_rook_move(board_obj, color)` | `→ list[int]` | All rook moves (magic bitboards) |
-| `list_all_queen_move(board_obj, color)` | `→ list[int]` | All queen moves (rook + bishop combination) |
-| `list_all_king_move(board_obj, color, castling=True)` | `→ list[int]` | All king moves + castling |
+| `list_all_pawn_moves(board_obj, color)` | `→ list[int]` | All pawn moves (advance, double advance, captures, en passant) |
+| `list_all_knight_moves(board_obj, color)` | `→ list[int]` | All knight moves |
+| `list_all_bishop_moves(board_obj, color)` | `→ list[int]` | All bishop moves (magic bitboards) |
+| `list_all_rook_moves(board_obj, color)` | `→ list[int]` | All rook moves (magic bitboards) |
+| `list_all_queen_moves(board_obj, color)` | `→ list[int]` | All queen moves (rook + bishop combination) |
+| `list_all_king_moves(board_obj, color, castling=True)` | `→ list[int]` | All king moves + castling |
 | `list_all_castling_move(board_obj, color)` | `→ list[int]` | Castling moves only |
-| `list_all_legal_move(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
+| `list_all_legal_moves(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
 | `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
 | `list_all_piece_move(board_obj, square, piece_value)` | `→ list[int]` | Moves of a specific piece from a square (only used by `print_highlighted_legal_move` in ChessDisplay) |
 
@@ -585,7 +585,7 @@ from chesscore.constants import *
 board = Board()
 
 # All legal moves for white
-legal_moves = MoveGen.list_all_legal_move(board, WHITE)
+legal_moves = MoveGen.list_all_legal_moves(board, WHITE)
 print(f"{len(legal_moves)} legal moves")  # → 20
 
 # Decode moves
@@ -642,13 +642,13 @@ for move in MoveGen.generate_all_moves(board, WHITE):
 | `Board.material_insufficiency()` | 348 ns | 2.87M |
 | `GameState.attackers_to()` (is_check) | 1.05 µs | 950K |
 | `GameState.is_checkmate()` | 1.59 µs | 628K |
-| `MoveGen.list_all_pawn_move()` | 4.14 µs | 241K |
-| `MoveGen.list_all_knight_move()` | 1.25 µs | 800K |
-| `MoveGen.list_all_bishop_move()` | 987 ns | 1.01M |
-| `MoveGen.list_all_rook_move()` | 971 ns | 1.03M |
-| `MoveGen.list_all_queen_move()` | 903 ns | 1.11M |
-| `MoveGen.list_all_king_move()` | 1.43 µs | 700K |
-| `MoveGen.list_all_legal_move()` | 57.3 µs | 17.4K |
+| `MoveGen.list_all_pawn_moves()` | 4.14 µs | 241K |
+| `MoveGen.list_all_knight_moves()` | 1.25 µs | 800K |
+| `MoveGen.list_all_bishop_moves()` | 987 ns | 1.01M |
+| `MoveGen.list_all_rook_moves()` | 971 ns | 1.03M |
+| `MoveGen.list_all_queen_moves()` | 903 ns | 1.11M |
+| `MoveGen.list_all_king_moves()` | 1.43 µs | 700K |
+| `MoveGen.list_all_legal_moves()` | 57.3 µs | 17.4K |
 
 ### PERFT (move generation validation)
 
