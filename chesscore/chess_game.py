@@ -31,6 +31,11 @@ class Board:
         self.last_position_hash = self.get_position_hash()
         self.position_hash_history = {self.last_position_hash: 1}
         self.encoded_move_in_progress = None
+
+        #for engine
+        self.mg_score = 0
+        self.eg_score = 0
+        self.phase = 0
     
 
     def init_board(self) -> None:
@@ -507,6 +512,263 @@ class Board:
         return undo
     
 
+    def make_move_search(self, move, side_to_move, promotion_piece=0) -> tuple:
+        """
+        Apply a move to the board and return an undo tuple.
+        This version is primarily used by engines as it also updates the
+        game phase and the middlegame/endgame evaluation scores.
+
+        Args:
+            move (int): Encoded move value.
+            side_to_move (int): Side color (WHITE=1 or BLACK=-1).
+            promotion_piece (int, optional): Piece type to promote to (QUEEN, ROOK, BISHOP, KNIGHT), or 0 for no promotion.
+
+        Returns:
+            undo (tuple): Undo information for the move.
+        """
+
+        from_ = move & 0x3F
+        to = (move >> 6) & 0x3F
+
+        from_bitboard = 1 << from_
+        to_bitboard = 1 << to
+
+        from_piece = self.get_piece_type_with_mask(from_bitboard)
+        to_piece = self.get_piece_type_with_mask(to_bitboard)
+
+        INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
+        ATT_INDEX = 1 - INDEX
+
+        en_passant_prev = self.en_passant_square
+        castling_rights_prev = self.castling_rights
+
+        undo = (move, from_piece, to_piece, castling_rights_prev, self.counter_halfmove_without_capture, en_passant_prev, promotion_piece, self.mg_score, self.eg_score, self.phase)
+
+        self.en_passant_square = 0
+
+        if to_piece:
+            if to_piece == PAWN:
+                self.pawn &= ~to_bitboard
+            elif to_piece == BISHOP:
+                self.phase -= 1
+                self.bishop &= ~to_bitboard
+            elif to_piece == KNIGHT:
+                self.phase -= 1
+                self.knight &= ~to_bitboard
+            elif to_piece == ROOK:
+                self.rook &= ~to_bitboard
+                self.phase -= 2
+                if to == 7: 
+                    self.castling_rights &= ~CR_WK
+                if to == 0: 
+                    self.castling_rights &= ~CR_WQ
+                if to == 63: 
+                    self.castling_rights &= ~CR_BK
+                if to == 56: 
+                    self.castling_rights &= ~CR_BQ
+            else:
+                self.queen &= ~to_bitboard   
+                self.phase -= 4
+
+            self.counter_halfmove_without_capture = 0
+            self.board_occupied_squares[ATT_INDEX] &= ~to_bitboard
+
+            if side_to_move == WHITE:
+                self.mg_score += pst[to_piece][MG_INDEX][to ^ 56]
+                self.eg_score += pst[to_piece][EG_INDEX][to ^ 56]
+            else:
+                self.mg_score -= pst[to_piece][MG_INDEX][to]
+                self.eg_score -= pst[to_piece][EG_INDEX][to]
+
+        else:
+            self.counter_halfmove_without_capture += 1
+
+        if from_piece == PAWN:
+            self.counter_halfmove_without_capture = 0
+
+            if promotion_piece:
+                self.pawn &= ~from_bitboard
+                if promotion_piece == QUEEN:
+                    self.queen |= to_bitboard
+                elif promotion_piece == ROOK:
+                    self.rook |= to_bitboard
+                elif promotion_piece == BISHOP:
+                    self.bishop |= to_bitboard
+                elif promotion_piece == KNIGHT:
+                    self.knight |= to_bitboard
+                
+                if side_to_move == WHITE:
+                    self.mg_score -= pst[PAWN][MG_INDEX][from_]
+                    self.eg_score -= pst[PAWN][EG_INDEX][from_]
+                    self.mg_score += pst[promotion_piece][MG_INDEX][to]
+                    self.eg_score += pst[promotion_piece][EG_INDEX][to]
+                else:
+                    self.mg_score += pst[PAWN][MG_INDEX][from_ ^ 56]
+                    self.eg_score += pst[PAWN][EG_INDEX][from_ ^ 56]
+                    self.mg_score -= pst[promotion_piece][MG_INDEX][to ^ 56]
+                    self.eg_score -= pst[promotion_piece][EG_INDEX][to ^ 56]
+            else:
+                self.pawn = (self.pawn & ~from_bitboard) | to_bitboard
+
+                if side_to_move == WHITE:
+                    self.mg_score -= pst[PAWN][MG_INDEX][from_]
+                    self.eg_score -= pst[PAWN][EG_INDEX][from_]
+                    self.mg_score += pst[PAWN][MG_INDEX][to]
+                    self.eg_score += pst[PAWN][EG_INDEX][to]
+                else:
+                    self.mg_score += pst[PAWN][MG_INDEX][from_ ^ 56]
+                    self.eg_score += pst[PAWN][EG_INDEX][from_ ^ 56]
+                    self.mg_score -= pst[PAWN][MG_INDEX][to ^ 56]
+                    self.eg_score -= pst[PAWN][EG_INDEX][to ^ 56]
+
+                if (to - from_) == 16 or (to - from_) == -16: # Note abs() is slower than direct comparison
+                    self.en_passant_square = (from_ + to) // 2
+
+                elif to == en_passant_prev:
+                    if side_to_move == WHITE:
+                        captured_pawn_square = to - 8
+                    else:
+                        captured_pawn_square = to + 8
+
+                    captured_pawn_bitboard = 1 << captured_pawn_square
+                    self.pawn &= ~captured_pawn_bitboard
+                    self.board_occupied_squares[ATT_INDEX] &= ~captured_pawn_bitboard
+                    
+                    if side_to_move == WHITE:
+                        self.mg_score += pst[PAWN][MG_INDEX][captured_pawn_square ^ 56]
+                        self.eg_score += pst[PAWN][EG_INDEX][captured_pawn_square ^ 56]
+                    else:
+                        self.mg_score -= pst[PAWN][MG_INDEX][captured_pawn_square]
+                        self.eg_score -= pst[PAWN][EG_INDEX][captured_pawn_square]
+
+        elif from_piece == BISHOP:
+            self.bishop = (self.bishop & ~from_bitboard) | to_bitboard
+            if side_to_move == WHITE:
+                self.mg_score -= pst[BISHOP][MG_INDEX][from_]
+                self.eg_score -= pst[BISHOP][EG_INDEX][from_]
+                self.mg_score += pst[BISHOP][MG_INDEX][to]
+                self.eg_score += pst[BISHOP][EG_INDEX][to]
+            else:
+                self.mg_score += pst[BISHOP][MG_INDEX][from_ ^ 56]
+                self.eg_score += pst[BISHOP][EG_INDEX][from_ ^ 56]
+                self.mg_score -= pst[BISHOP][MG_INDEX][to ^ 56]
+                self.eg_score -= pst[BISHOP][EG_INDEX][to ^ 56]
+
+        elif from_piece == KNIGHT:
+            self.knight = (self.knight & ~from_bitboard) | to_bitboard
+            if side_to_move == WHITE:
+                self.mg_score -= pst[KNIGHT][MG_INDEX][from_]
+                self.eg_score -= pst[KNIGHT][EG_INDEX][from_]
+                self.mg_score += pst[KNIGHT][MG_INDEX][to]
+                self.eg_score += pst[KNIGHT][EG_INDEX][to]
+            else:
+                self.mg_score += pst[KNIGHT][MG_INDEX][from_ ^ 56]
+                self.eg_score += pst[KNIGHT][EG_INDEX][from_ ^ 56]
+                self.mg_score -= pst[KNIGHT][MG_INDEX][to ^ 56]
+                self.eg_score -= pst[KNIGHT][EG_INDEX][to ^ 56]
+
+        elif from_piece == ROOK:
+            self.rook = (self.rook & ~from_bitboard) | to_bitboard
+            if side_to_move == WHITE:
+                self.mg_score -= pst[ROOK][MG_INDEX][from_]
+                self.eg_score -= pst[ROOK][EG_INDEX][from_]
+                self.mg_score += pst[ROOK][MG_INDEX][to]
+                self.eg_score += pst[ROOK][EG_INDEX][to]
+            else:
+                self.mg_score += pst[ROOK][MG_INDEX][from_ ^ 56]
+                self.eg_score += pst[ROOK][EG_INDEX][from_ ^ 56]
+                self.mg_score -= pst[ROOK][MG_INDEX][to ^ 56]
+                self.eg_score -= pst[ROOK][EG_INDEX][to ^ 56]
+            
+            if from_ == 7: 
+                self.castling_rights &= ~CR_WK
+            if from_ == 0: 
+                self.castling_rights &= ~CR_WQ
+            if from_ == 63: 
+                self.castling_rights &= ~CR_BK
+            if from_ == 56: 
+                self.castling_rights &= ~CR_BQ
+
+        elif from_piece == QUEEN:
+            self.queen = (self.queen & ~from_bitboard) | to_bitboard
+            if side_to_move == WHITE:
+                self.mg_score -= pst[QUEEN][MG_INDEX][from_]
+                self.eg_score -= pst[QUEEN][EG_INDEX][from_]
+                self.mg_score += pst[QUEEN][MG_INDEX][to]
+                self.eg_score += pst[QUEEN][EG_INDEX][to]
+            else:
+                self.mg_score += pst[QUEEN][MG_INDEX][from_ ^ 56]
+                self.eg_score += pst[QUEEN][EG_INDEX][from_ ^ 56]
+                self.mg_score -= pst[QUEEN][MG_INDEX][to ^ 56]
+                self.eg_score -= pst[QUEEN][EG_INDEX][to ^ 56]
+
+        else:
+            self.king = (self.king & ~from_bitboard) | to_bitboard
+
+            self.king_square[INDEX] = to
+            
+            if side_to_move == WHITE:
+                self.mg_score -= pst[KING][MG_INDEX][from_]
+                self.eg_score -= pst[KING][EG_INDEX][from_]
+                self.mg_score += pst[KING][MG_INDEX][to]
+                self.eg_score += pst[KING][EG_INDEX][to]
+            else:
+                self.mg_score += pst[KING][MG_INDEX][from_ ^ 56]
+                self.eg_score += pst[KING][EG_INDEX][from_ ^ 56]
+                self.mg_score -= pst[KING][MG_INDEX][to ^ 56]
+                self.eg_score -= pst[KING][EG_INDEX][to ^ 56]
+
+            if side_to_move == WHITE:
+                self.castling_rights &= ~CR_WK
+                self.castling_rights &= ~CR_WQ
+            else:
+                self.castling_rights &= ~CR_BK
+                self.castling_rights &= ~CR_BQ
+
+        if from_piece == KING:
+            d = to - from_
+            if d == 2:  
+                rook_from_mask = 1 << (7 if side_to_move == WHITE else 63)
+                rook_to_mask = 1 << (5 if side_to_move == WHITE else 61)
+
+                self.rook = (self.rook & ~rook_from_mask) | rook_to_mask
+                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_from_mask) | rook_to_mask
+                
+                if side_to_move == WHITE:
+                    self.mg_score -= pst[ROOK][MG_INDEX][7]
+                    self.eg_score -= pst[ROOK][EG_INDEX][7]
+                    self.mg_score += pst[ROOK][MG_INDEX][5]
+                    self.eg_score += pst[ROOK][EG_INDEX][5]
+                else:
+                    self.mg_score += pst[ROOK][MG_INDEX][63 ^ 56]
+                    self.eg_score += pst[ROOK][EG_INDEX][63 ^ 56]
+                    self.mg_score -= pst[ROOK][MG_INDEX][61 ^ 56]
+                    self.eg_score -= pst[ROOK][EG_INDEX][61 ^ 56]
+
+            elif d == -2:  
+                rook_from_mask = 1 << (0 if side_to_move == WHITE else 56)
+                rook_to_mask = 1 << (3 if side_to_move == WHITE else 59)
+                
+                self.rook = (self.rook & ~rook_from_mask) | rook_to_mask
+                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_from_mask) | rook_to_mask
+                
+                if side_to_move == WHITE:
+                    self.mg_score -= pst[ROOK][MG_INDEX][0]
+                    self.eg_score -= pst[ROOK][EG_INDEX][0]
+                    self.mg_score += pst[ROOK][MG_INDEX][3]
+                    self.eg_score += pst[ROOK][EG_INDEX][3]
+                else:
+                    self.mg_score += pst[ROOK][MG_INDEX][56 ^ 56]
+                    self.eg_score += pst[ROOK][EG_INDEX][56 ^ 56]
+                    self.mg_score -= pst[ROOK][MG_INDEX][59 ^ 56]
+                    self.eg_score -= pst[ROOK][EG_INDEX][59 ^ 56]
+
+        self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~from_bitboard) | to_bitboard
+        self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
+
+        return undo
+    
+
     def unmake_move(self, undo, side_to_move) -> None:
         """
         Revert a move using the provided undo information.
@@ -604,7 +866,112 @@ class Board:
         self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
         self.counter_halfmove_without_capture = counter_halfmove_without_capture
         self.en_passant_square = en_passant_prev
-    
+
+
+    def unmake_move_search(self, undo, side_to_move) -> None:
+        """
+        Revert a move using the provided undo information.
+        This version is primarily used by engines as it also updates the
+        game phase and the middlegame/endgame evaluation scores.
+
+        Args:
+            undo (tuple): Undo information for the move.
+            side_to_move (int): Side color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            None
+        """
+
+        move, from_piece, to_piece, castling_rights_prev, counter_halfmove_without_capture, en_passant_prev, promotion_piece, old_mg_score, old_eg_score, old_phase = undo
+
+        self.mg_score = old_mg_score
+        self.eg_score = old_eg_score
+        self.phase = old_phase
+
+        from_ = move & 0x3F
+        to = (move >> 6) & 0x3F
+
+        from_bitboard = 1 << from_
+        to_bitboard = 1 << to
+
+        INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
+        ATT_INDEX = 1 - INDEX
+
+        self.castling_rights = castling_rights_prev
+
+        if from_piece == KING:
+            d = to - from_
+            if d == 2:
+                rook_from_mask = 1 << (7 if side_to_move == WHITE else 63)
+                rook_to_mask = 1 << (5 if side_to_move == WHITE else 61)
+
+                self.rook = (self.rook & ~rook_to_mask) | rook_from_mask
+                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_to_mask) | rook_from_mask
+
+            elif d == -2:
+                rook_from_mask = 1 << (0 if side_to_move == WHITE else 56)
+                rook_to_mask = 1 << (3 if side_to_move == WHITE else 59)
+
+                self.rook = (self.rook & ~rook_to_mask) | rook_from_mask
+                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_to_mask) | rook_from_mask
+
+        if from_piece == PAWN:
+            if promotion_piece:
+                if promotion_piece == QUEEN:
+                    self.queen &= ~to_bitboard
+                elif promotion_piece == ROOK:
+                    self.rook &= ~to_bitboard
+                elif promotion_piece == BISHOP:
+                    self.bishop &= ~to_bitboard
+                elif promotion_piece == KNIGHT:
+                    self.knight &= ~to_bitboard
+                self.pawn |= from_bitboard
+            else:
+                self.pawn = (self.pawn & ~to_bitboard) | from_bitboard
+                
+                if to == en_passant_prev and en_passant_prev != 0:
+                    if side_to_move == WHITE:
+                        captured_pawn_square = to - 8
+                    else:
+                        captured_pawn_square = to + 8
+
+                    captured_pawn_bitboard = 1 << captured_pawn_square
+                    self.pawn |= captured_pawn_bitboard
+                    self.board_occupied_squares[ATT_INDEX] |= captured_pawn_bitboard
+
+        elif from_piece == BISHOP:
+            self.bishop = (self.bishop & ~to_bitboard) | from_bitboard
+        elif from_piece == KNIGHT:
+            self.knight = (self.knight & ~to_bitboard) | from_bitboard
+        elif from_piece == ROOK:
+            self.rook = (self.rook & ~to_bitboard) | from_bitboard
+        elif from_piece == QUEEN:
+            self.queen = (self.queen & ~to_bitboard) | from_bitboard
+        else:
+            self.king = (self.king & ~to_bitboard) | from_bitboard
+            self.king_square[INDEX] = from_
+
+        if to_piece:
+            if to_piece == PAWN:
+                self.pawn |= to_bitboard
+            elif to_piece == BISHOP:
+                self.bishop |= to_bitboard
+            elif to_piece == KNIGHT: 
+                self.knight |= to_bitboard
+            elif to_piece == ROOK: 
+                self.rook |= to_bitboard
+            elif to_piece == QUEEN: 
+                self.queen |= to_bitboard
+            else:
+                self.king |= to_bitboard
+
+            self.board_occupied_squares[ATT_INDEX] |= to_bitboard
+        
+        self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~to_bitboard) | from_bitboard
+        self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
+        self.counter_halfmove_without_capture = counter_halfmove_without_capture
+        self.en_passant_square = en_passant_prev
+
 
     @staticmethod
     def bitboard_to_fen(bitboard) -> str:
@@ -2023,4 +2390,3 @@ class ChessCore:
 if __name__ == "__main__":
     process = ChessCore()
     process.play()
-# yes, we are in 2026 :=)
