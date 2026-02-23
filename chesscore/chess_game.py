@@ -1,6 +1,3 @@
-from shutil import move
-
-
 try:
     from .constants import *
     from .constants import __all__ as _constants_all
@@ -2026,3 +2023,4 @@ class ChessCore:
 if __name__ == "__main__":
     process = ChessCore()
     process.play()
+# yes, we are in 2026 :=)
