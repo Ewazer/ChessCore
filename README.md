@@ -195,7 +195,7 @@ Initializes the board in the starting position.
 | `get_piece_type(square)` | `square: int → int \| None` | Returns the piece type on a square (0-63), or `None` |
 | `get_piece_type_with_mask(mask)` | `mask: int → int \| None` | Same but with a bitboard mask |
 | `get_piece_type_and_color(square)` | `square: int → int` | Returns the signed type (positive=white, negative=black, 0=empty) |
-| `make_move(move, side, promo)` | `move: int, side: int, promo: int → tuple` | Applies a move and returns an undo tuple |
+| `make_move(move, side, promotion_piece)` | `move: int, side: int, promotion_piece: int → tuple` | Applies a move and returns an undo tuple |
 | `unmake_move(undo, side)` | `undo: tuple, side: int → None` | Undoes a move using the undo tuple |
 | `move_parser(move_str)` | `move_str: str → int` | Parses `"e2 e4"` into an encoded move |
 | `parse_move_and_validate(all_move)` | `all_move: str → bool` | Parses and validates a move, stores in `encoded_move_in_progress` |
