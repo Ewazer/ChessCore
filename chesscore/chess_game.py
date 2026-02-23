@@ -710,7 +710,7 @@ class Board:
 
 
 class MoveGen:      
-    def list_all_pawn_move(board_obj, color) -> list[int]:
+    def list_all_pawn_moves(board_obj, color) -> list[int]:
         """
         Generate all valid pawn moves for the specified color, including en passant.
 
@@ -819,7 +819,7 @@ class MoveGen:
         return list_p_move
     
 
-    def list_all_knight_move(board_obj, color) -> list[int]:
+    def list_all_knight_moves(board_obj, color) -> list[int]:
         """
         Generate all valid knight moves for the specified color.
 
@@ -857,7 +857,7 @@ class MoveGen:
 
 
     @staticmethod
-    def list_all_rook_move(board_obj, color) -> list[int]:
+    def list_all_rook_moves(board_obj, color) -> list[int]:
         """
         Generate all valid rook moves for the specified color.
 
@@ -900,7 +900,7 @@ class MoveGen:
     
 
     @staticmethod
-    def list_all_bishop_move(board_obj, color) -> list[int]:
+    def list_all_bishop_moves(board_obj, color) -> list[int]:
         """
         Generate all valid bishop moves for the specified color.
 
@@ -943,7 +943,7 @@ class MoveGen:
     
 
     @staticmethod
-    def list_all_queen_move(board_obj, color) -> list[int]:
+    def list_all_queen_moves(board_obj, color) -> list[int]:
         """
         Generate all queen bishop moves for the specified color.
 
@@ -990,7 +990,7 @@ class MoveGen:
 
 
     @staticmethod
-    def list_all_king_move(board_obj, color, castling=True) -> list[int]:
+    def list_all_king_moves(board_obj, color, castling=True) -> list[int]:
         """
         Generate all king moves for the specified color.
 
@@ -1080,7 +1080,7 @@ class MoveGen:
 
 
     @staticmethod
-    def list_all_legal_move(board_obj, side, castling = True) -> list[int]:
+    def list_all_legal_moves(board_obj, side, castling = True) -> list[int]:
         """
         Generate all legal moves for a side (excluding moves leaving king in check).
         
@@ -1103,12 +1103,12 @@ class MoveGen:
         INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
 
         gens = (
-            MoveGen.list_all_pawn_move,
-            MoveGen.list_all_knight_move,
-            MoveGen.list_all_bishop_move,
-            MoveGen.list_all_rook_move,
-            MoveGen.list_all_queen_move,
-            lambda b, s: MoveGen.list_all_king_move(b, s, castling),
+            MoveGen.list_all_pawn_moves,
+            MoveGen.list_all_knight_moves,
+            MoveGen.list_all_bishop_moves,
+            MoveGen.list_all_rook_moves,
+            MoveGen.list_all_queen_moves,
+            lambda b, s: MoveGen.list_all_king_moves(b, s, castling),
         )
 
         for gen in gens:
@@ -1141,42 +1141,42 @@ class MoveGen:
         king_square = board_obj.king_square
         INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
 
-        for e in MoveGen.list_all_king_move(board_obj, side, castling):
+        for e in MoveGen.list_all_king_moves(board_obj, side, castling):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
             if legal:
                 yield e
 
-        for e in MoveGen.list_all_queen_move(board_obj, side):
+        for e in MoveGen.list_all_queen_moves(board_obj, side):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
             if legal:
                 yield e
         
-        for e in MoveGen.list_all_knight_move(board_obj, side):
+        for e in MoveGen.list_all_knight_moves(board_obj, side):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
             if legal:
                 yield e
     
-        for e in MoveGen.list_all_bishop_move(board_obj, side):
+        for e in MoveGen.list_all_bishop_moves(board_obj, side):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
             if legal:
                 yield e
 
-        for e in MoveGen.list_all_rook_move(board_obj, side):
+        for e in MoveGen.list_all_rook_moves(board_obj, side):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
             if legal:
                 yield e
         
-        for e in MoveGen.list_all_pawn_move(board_obj, side):
+        for e in MoveGen.list_all_pawn_moves(board_obj, side):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
@@ -1201,17 +1201,17 @@ class MoveGen:
         color = WHITE if piece_value > 0 else BLACK
 
         if abs(piece_value) == PAWN:
-            potential_moves = MoveGen.list_all_pawn_move(board_obj, color)
+            potential_moves = MoveGen.list_all_pawn_moves(board_obj, color)
         elif abs(piece_value) == KNIGHT:
-            potential_moves = MoveGen.list_all_knight_move(board_obj, color)
+            potential_moves = MoveGen.list_all_knight_moves(board_obj, color)
         elif abs(piece_value) == BISHOP:
-            potential_moves =  MoveGen.list_all_bishop_move(board_obj, color)
+            potential_moves =  MoveGen.list_all_bishop_moves(board_obj, color)
         elif abs(piece_value) == ROOK:
-            potential_moves =  MoveGen.list_all_rook_move(board_obj, color)
+            potential_moves =  MoveGen.list_all_rook_moves(board_obj, color)
         elif abs(piece_value) == QUEEN:
-            potential_moves =  MoveGen.list_all_queen_move(board_obj, color)
+            potential_moves =  MoveGen.list_all_queen_moves(board_obj, color)
         elif abs(piece_value) == KING:
-            potential_moves =  MoveGen.list_all_king_move(board_obj, color)
+            potential_moves =  MoveGen.list_all_king_moves(board_obj, color)
         else:
             potential_moves = []
         
@@ -1221,7 +1221,6 @@ class MoveGen:
                 list_move.append(e)
 
         return list_move
-
 
 
 class GameState:
@@ -1325,17 +1324,17 @@ class GameState:
         mask = SQUARE_MASK[from_sq]
 
         if board_obj.pawn & mask:
-            pseudo_moves = MoveGen.list_all_pawn_move(board_obj, side)
+            pseudo_moves = MoveGen.list_all_pawn_moves(board_obj, side)
         elif board_obj.knight & mask:
-            pseudo_moves = MoveGen.list_all_knight_move(board_obj, side)
+            pseudo_moves = MoveGen.list_all_knight_moves(board_obj, side)
         elif board_obj.bishop & mask:
-            pseudo_moves = MoveGen.list_all_bishop_move(board_obj, side)
+            pseudo_moves = MoveGen.list_all_bishop_moves(board_obj, side)
         elif board_obj.rook & mask:
-            pseudo_moves = MoveGen.list_all_rook_move(board_obj, side)
+            pseudo_moves = MoveGen.list_all_rook_moves(board_obj, side)
         elif board_obj.queen & mask:
-            pseudo_moves = MoveGen.list_all_queen_move(board_obj, side)
+            pseudo_moves = MoveGen.list_all_queen_moves(board_obj, side)
         elif board_obj.king & mask:
-            pseudo_moves = MoveGen.list_all_king_move(board_obj, side)
+            pseudo_moves = MoveGen.list_all_king_moves(board_obj, side)
         else:
             return False
 
@@ -1703,7 +1702,7 @@ class ChessDisplay:
         else:
             board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)][::-1] for i in range(8)]
 
-        list_move = MoveGen.list_all_legal_move(board_obj, side)
+        list_move = MoveGen.list_all_legal_moves(board_obj, side)
         
         for move in list_move:
             from_square = move & 0x3F
@@ -1880,7 +1879,7 @@ class ChessCore:
             ChessDisplay.print_game_over(self.board, BLACK)
             return 'checkmate'
         
-        legal_move = MoveGen.list_all_legal_move(self.board, WHITE if self.board.side_to_move == BLACK else BLACK)      
+        legal_move = MoveGen.list_all_legal_moves(self.board, WHITE if self.board.side_to_move == BLACK else BLACK)      
 
         if not legal_move:
             ChessDisplay.print_draw(self.board,  self.board.side_to_move*-1, 'stalemate')
@@ -2023,4 +2022,5 @@ if __name__ == "__main__":
     process = ChessCore()
     process.play()
 
+    
 # yes, we are in 2026 :=)
