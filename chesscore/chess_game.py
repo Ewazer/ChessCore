@@ -1,3 +1,6 @@
+from shutil import move
+
+
 try:
     from .constants import *
     from .constants import __all__ as _constants_all
@@ -645,7 +648,8 @@ class Board:
         return "/".join(r)
         
 
-    def move_parser(self, move_str) -> int:
+    @staticmethod
+    def move_parser(move_str) -> int:
         """
         Parse a move string.
 
@@ -1221,6 +1225,7 @@ class MoveGen:
                 list_move.append(e)
 
         return list_move
+
 
 
 class GameState:
@@ -2021,6 +2026,3 @@ class ChessCore:
 if __name__ == "__main__":
     process = ChessCore()
     process.play()
-
-    
-# yes, we are in 2026 :=)
