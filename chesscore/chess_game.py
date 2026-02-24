@@ -14,7 +14,8 @@ class Board:
     __slots__ = (
         'pawn', 'knight', 'bishop', 'rook', 'queen', 'king','board_occupied_squares', 'all_board_occupied_squares', 'king_square',
         'move_history', 'side_to_move', 'counter_halfmove_without_capture','castling_rights', 'position_has_loaded', 'en_passant_square',
-        'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','start_coordinate', 'end_coordinate', 'start_value', 'end_value', 'capture_value'
+        'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','start_coordinate', 'end_coordinate', 'start_value', 
+        'end_value', 'capture_value','mg_score', 'eg_score', 'phase'
     )
 
     def __init__(self):
@@ -1090,8 +1091,8 @@ class MoveGen:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
 
-        list_p_move = []
-        append = list_p_move.append
+        list_p_moves = []
+        append = list_p_moves.append
 
         all_occ = board_obj.all_board_occupied_squares
         en_passant_square = board_obj.en_passant_square
@@ -1184,7 +1185,80 @@ class MoveGen:
                     en_passant_square_attackers ^= least_significant_bit
                     append(from_ | (en_passant_square << 6))
 
-        return list_p_move
+        return list_p_moves
+
+    
+    def list_all_pawn_captures(board_obj, color) -> list[int]:
+        """
+        Generate all valid pawn capture moves for the specified color, including en passant.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+        """
+
+        list_p_captures = []
+        append = list_p_captures.append
+
+        en_passant_square = board_obj.en_passant_square
+
+        if color == WHITE:
+            enemy_board = board_obj.board_occupied_squares[BLACK_INDEX]
+            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
+
+            capt1 = (pawn_board << 7) & enemy_board & ~FILE_MASKS[7]
+            capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0]
+
+            while capt1:
+                least_significant_bit = capt1 & -capt1
+                to = least_significant_bit.bit_length() - 1
+                capt1 ^= least_significant_bit
+                append(to * 65 - 7)
+
+            while capt2:
+                least_significant_bit = capt2 & -capt2
+                to = least_significant_bit.bit_length() - 1
+                capt2 ^= least_significant_bit
+                append(to * 65 - 9)
+
+            if en_passant_square:
+                en_passant_square_mask = 1 << en_passant_square
+                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
+                while en_passant_square_attackers:
+                    least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
+                    from_ = least_significant_bit.bit_length() - 1
+                    en_passant_square_attackers ^= least_significant_bit
+                    append(from_ | (en_passant_square << 6))
+
+        else: 
+            enemy_board = board_obj.board_occupied_squares[WHITE_INDEX]
+            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
+
+            capt1 = (pawn_board >> 7) & enemy_board & ~FILE_MASKS[0]
+            capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7]
+
+            while capt1:
+                least_significant_bit = capt1 & -capt1
+                to = least_significant_bit.bit_length() - 1
+                capt1 ^= least_significant_bit
+                append(to * 65 + 7)
+
+            while capt2:
+                least_significant_bit = capt2 & -capt2
+                to = least_significant_bit.bit_length() - 1
+                capt2 ^= least_significant_bit
+                append(to * 65 + 9)
+
+            if en_passant_square:
+                en_passant_square_mask = 1 << en_passant_square
+                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) << 7) | ((en_passant_square_mask & ~FILE_MASKS[7]) << 9))
+                while en_passant_square_attackers:
+                    least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
+                    from_ = least_significant_bit.bit_length() - 1
+                    en_passant_square_attackers ^= least_significant_bit
+                    append(from_ | (en_passant_square << 6))
+
+        return list_p_captures
     
 
     def list_all_knight_moves(board_obj, color) -> list[int]:
@@ -1199,8 +1273,8 @@ class MoveGen:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
 
-        list_k_move = []
-        append = list_k_move.append
+        list_k_moves = []
+        append = list_k_moves.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
         
@@ -1221,7 +1295,40 @@ class MoveGen:
 
                 append(from_ | (to << 6))
 
-        return list_k_move
+        return list_k_moves
+    
+
+    def list_all_knight_captures(board_obj, color) -> list[int]:
+        """
+        Generate all valid knight captures for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_k_captures = []
+        append = list_k_captures.append
+
+        knight_board = board_obj.knight & board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        while knight_board:
+            least_significant_bit = knight_board & -knight_board
+            from_ = least_significant_bit.bit_length() - 1
+            knight_board &= knight_board - 1
+
+            to_possibilities = KNIGHT_TABLE[from_] & board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+
+        return list_k_captures
 
 
     @staticmethod
@@ -1237,8 +1344,8 @@ class MoveGen:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
 
-        list_r_move = []
-        append = list_r_move.append
+        list_r_moves = []
+        append = list_r_moves.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -1264,7 +1371,49 @@ class MoveGen:
 
                 append(from_ | (to << 6))
         
-        return list_r_move
+        return list_r_moves
+    
+
+    @staticmethod
+    def list_all_rook_captures(board_obj, color) -> list[int]:
+        """
+        Generate all valid rook captures for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_r_captures = []
+        append = list_r_captures.append
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        rook = board_obj.rook & own_occupied_squares
+
+        occ = board_obj.all_board_occupied_squares
+
+        while rook:
+            least_significant_bit = rook & -rook
+            from_ = least_significant_bit.bit_length() - 1
+
+            rook &= rook - 1
+            
+            occ_rel = occ & ROOK_MASK[from_]
+            idx = ((occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+            
+            to_possibilities = ROOK_TABLE[from_][idx] & board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+        
+        return list_r_captures
     
 
     @staticmethod
@@ -1280,8 +1429,8 @@ class MoveGen:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
 
-        list_b_move = []
-        append = list_b_move.append
+        list_b_moves = []
+        append = list_b_moves.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -1307,13 +1456,13 @@ class MoveGen:
 
                 append(from_ | (to << 6))
         
-        return list_b_move
+        return list_b_moves
     
 
     @staticmethod
-    def list_all_queen_moves(board_obj, color) -> list[int]:
+    def list_all_bishop_captures(board_obj, color) -> list[int]:
         """
-        Generate all queen bishop moves for the specified color.
+        Generate all valid bishop captures for the specified color.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
@@ -1323,8 +1472,50 @@ class MoveGen:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
 
-        list_q_move = []
-        append = list_q_move.append
+        list_b_captures = []
+        append = list_b_captures.append
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        bishop = board_obj.bishop & own_occupied_squares
+
+        occ = board_obj.all_board_occupied_squares
+
+        while bishop:
+            least_significant_bit = bishop & -bishop
+            from_ = least_significant_bit.bit_length() - 1
+
+            bishop &= bishop - 1
+            
+            occ_rel = occ & BISHOP_MASK[from_]
+            idx = ((occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+            
+            to_possibilities = BISHOP_TABLE[from_][idx] & board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+        
+        return list_b_captures
+    
+
+    @staticmethod
+    def list_all_queen_moves(board_obj, color) -> list[int]:
+        """
+        Generate all queen moves for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_q_moves = []
+        append = list_q_moves.append
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -1354,7 +1545,53 @@ class MoveGen:
 
                 append(from_ | (to << 6))
 
-        return list_q_move
+        return list_q_moves
+
+
+    @staticmethod
+    def list_all_queen_captures(board_obj, color) -> list[int]:
+        """
+        Generate all queen captures for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_q_captures = []
+        append = list_q_captures.append
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        queen = board_obj.queen & own_occupied_squares
+
+        occ = board_obj.all_board_occupied_squares
+
+        while queen:
+            least_significant_bit = queen & -queen
+            from_ = least_significant_bit.bit_length() - 1
+
+            queen &= queen - 1
+            
+            bishop_occ_rel = occ & BISHOP_MASK[from_]
+            bishop_idx = ((bishop_occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+            
+            rook_occ_rel = occ & ROOK_MASK[from_]
+            rook_idx = ((rook_occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+
+            to_possibilities = (ROOK_TABLE[from_][rook_idx] | BISHOP_TABLE[from_][bishop_idx]) & board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+
+        return list_q_captures
 
 
     @staticmethod
@@ -1371,7 +1608,7 @@ class MoveGen:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
 
-        list_k_move = []
+        list_k_moves = []
 
         own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
 
@@ -1381,18 +1618,55 @@ class MoveGen:
 
         from_ = king_board.bit_length() - 1
 
+        append = list_k_moves.append
+
         to_possibilities = KING_TABLE[from_] & free_squares
         while to_possibilities:
             least_significant_bit2 = to_possibilities & -to_possibilities
             to = least_significant_bit2.bit_length() - 1
             to_possibilities &= to_possibilities - 1
 
-            list_k_move.append(from_ | (to << 6))
+            append(from_ | (to << 6))
 
         if castling:
-            list_k_move.extend(MoveGen.list_all_castling_move(board_obj, color))
+            list_k_moves.extend(MoveGen.list_all_castling_move(board_obj, color))
 
-        return list_k_move
+        return list_k_moves
+    
+
+    @staticmethod
+    def list_all_king_captures(board_obj, color, castling=True) -> list[int]:
+        """
+        Generate all king captures for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            castling (optional bool): Whether to include castling moves. Defaults to True.
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_k_captures = []
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        king_board = board_obj.king & own_occupied_squares
+
+        from_ = king_board.bit_length() - 1
+
+        append = list_k_captures.append
+
+        to_possibilities = KING_TABLE[from_] & board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+        while to_possibilities:
+            least_significant_bit2 = to_possibilities & -to_possibilities
+            to = least_significant_bit2.bit_length() - 1
+            to_possibilities &= to_possibilities - 1
+
+            append(from_ | (to << 6))
+
+        return list_k_captures
     
     
     @staticmethod
@@ -1408,44 +1682,45 @@ class MoveGen:
             list: Encoded castling moves as (from_square | (to_square << 6)).
         """
 
-        list_castling_move = []
+        list_castling_moves = []
 
         rights = board_obj.castling_rights
         all_board_occupied_squares = board_obj.all_board_occupied_squares
         attackers_to = GameState.attackers_to
+        append = list_castling_moves.append
 
         if color == WHITE:
             canKingsideCastling = (rights & CR_WK) and (all_board_occupied_squares & WK_EMPTY) == 0
             canQueensideCastling = (rights & CR_WQ) and (all_board_occupied_squares & WQ_EMPTY) == 0
             if not (canKingsideCastling or canQueensideCastling):
-                return list_castling_move
+                return list_castling_moves
 
             if attackers_to(board_obj, WHITE, 4):
-                return list_castling_move
+                return list_castling_moves
 
             if canKingsideCastling and (not attackers_to(board_obj, WHITE, 5)):
-                list_castling_move.append(4 | (6 << 6))
+                append(4 | (6 << 6))
 
             if canQueensideCastling and (not attackers_to(board_obj, WHITE, 3)):
-                list_castling_move.append(4 | (2 << 6))
+                append(4 | (2 << 6))
 
         else:
             canKingsideCastling = (rights & CR_BK) and (all_board_occupied_squares & BK_EMPTY) == 0
             canQueensideCastling = (rights & CR_BQ) and (all_board_occupied_squares & BQ_EMPTY) == 0
             if not (canKingsideCastling or canQueensideCastling):
-                return list_castling_move
+                return list_castling_moves
 
             if attackers_to(board_obj, BLACK, 60):
-                return list_castling_move
+                return list_castling_moves
 
             if canKingsideCastling and (not attackers_to(board_obj, BLACK, 61)):
-                list_castling_move.append(60 | (62 << 6))
+                append(60 | (62 << 6))
 
             if canQueensideCastling and (not attackers_to(board_obj, BLACK, 59)):
-                list_castling_move.append(60 | (58 << 6))
+                append(60 | (58 << 6))
 
-        return list_castling_move
-
+        return list_castling_moves
+    
 
     @staticmethod
     def list_all_legal_moves(board_obj, side, castling = True) -> list[int]:
@@ -1458,11 +1733,11 @@ class MoveGen:
             castling (bool, optional): Whether to include castling moves. Defaults to True.
         
         Returns:
-            list: Encoded castling moves as (from_square | (to_square << 6)).
+            list: Encoded legal moves as (from_square | (to_square << 6)).
         """
         
-        list_all_move = []
-        append = list_all_move.append
+        list_all_moves = []
+        append = list_all_moves.append
 
         make = board_obj.make_move
         unmake = board_obj.unmake_move
@@ -1486,7 +1761,7 @@ class MoveGen:
                     append(mv)
                 unmake(undo, side)
 
-        return list_all_move
+        return list_all_moves
 
 
     @staticmethod
@@ -1545,6 +1820,109 @@ class MoveGen:
                 yield e
         
         for e in MoveGen.list_all_pawn_moves(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+
+    @staticmethod
+    def list_all_legal_captures(board_obj, side) -> list[int]:
+        """
+        Generate all legal captures for a side (excluding moves leaving king in check).
+        
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+        
+        list_all_captures = []
+        append = list_all_captures.append
+
+        make = board_obj.make_move
+        unmake = board_obj.unmake_move
+        attackers_to = GameState.attackers_to
+        king_square = board_obj.king_square
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+
+        gens = (
+            MoveGen.list_all_pawn_captures,
+            MoveGen.list_all_knight_captures,
+            MoveGen.list_all_bishop_captures,
+            MoveGen.list_all_rook_captures,
+            MoveGen.list_all_queen_captures,
+            lambda b, s: MoveGen.list_all_king_captures(b, s, False),
+        )
+
+        for gen in gens:
+            for mv in gen(board_obj, side):
+                undo = make(mv, side)
+                if not attackers_to(board_obj, side, king_square[INDEX]):
+                    append(mv)
+                unmake(undo, side)
+
+        return list_all_captures
+    
+
+    @staticmethod
+    def generate_all_captures(board_obj, side):
+        """
+        Generate all legal captures for a side (excluding moves leaving king in check).
+        
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+        
+        Yields:
+            generator: Yields encoded moves as (from_square | (to_square << 6)).
+        """
+
+        make = board_obj.make_move
+        unmake = board_obj.unmake_move
+        attackers_to = GameState.attackers_to
+        king_square = board_obj.king_square
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+
+        for e in MoveGen.list_all_king_captures(board_obj, side, castling = False):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_queen_captures(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+        
+        for e in MoveGen.list_all_knight_captures(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+    
+        for e in MoveGen.list_all_bishop_captures(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_rook_captures(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+        
+        for e in MoveGen.list_all_pawn_captures(board_obj, side):
             undo = make(e, side)
             legal = not attackers_to(board_obj, side, king_square[INDEX])
             unmake(undo, side)
