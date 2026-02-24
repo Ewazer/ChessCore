@@ -675,33 +675,34 @@ for move in MoveGen.generate_all_moves(board, WHITE):
 
 ## Benchmarks
 
-100K iterations/function, executed on Github Codespaces (2 cores), Python 3.12, Linux (Ubuntu 24.04):
+100K iterations/function, executed on Github Codespaces (2 cores), **PyPy3**, Linux (Ubuntu 24.04):
 
 ### Micro-benchmarks
 
 | Function | Average time | Ops/s |
 |----------|------------|-------|
-| `Board.__init__()` | 1.16 µs | 865K |
-| `Board.material_insufficiency()` | 348 ns | 2.87M |
-| `GameState.attackers_to()` (is_check) | 1.05 µs | 950K |
-| `GameState.is_checkmate()` | 1.59 µs | 628K |
-| `MoveGen.list_all_pawn_moves()` | 4.14 µs | 241K |
-| `MoveGen.list_all_knight_moves()` | 1.25 µs | 800K |
-| `MoveGen.list_all_bishop_moves()` | 987 ns | 1.01M |
-| `MoveGen.list_all_rook_moves()` | 971 ns | 1.03M |
-| `MoveGen.list_all_queen_moves()` | 903 ns | 1.11M |
-| `MoveGen.list_all_king_moves()` | 1.43 µs | 700K |
-| `MoveGen.list_all_legal_moves()` | 57.3 µs | 17.4K |
+| `Board.__init__()` | 157.63 ns | 6.34M |
+| `Board.material_insufficiency()` | 59.80 ns | 16.72M |
+| `GameState.attackers_to()` (is_check) | 456.12 ns | 2.19M |
+| `GameState.is_checkmate()` | 448.84 ns | 2.23M |
+| `MoveGen.list_all_pawn_moves()` | 1.41 µs | 710.88K |
+| `MoveGen.list_all_knight_moves()` | 416.64 ns | 2.40M |
+| `MoveGen.list_all_bishop_moves()` | 336.63 ns | 2.97M |
+| `MoveGen.list_all_rook_moves()` | 502.84 ns | 1.99M |
+| `MoveGen.list_all_queen_moves()` | 309.48 ns | 3.23M |
+| `MoveGen.list_all_king_moves()` | 128.02 ns | 7.81M |
+| `MoveGen.list_all_legal_moves()` | 12.88 µs | 77.62K |
 
 ### PERFT (move generation validation)
 
 | Depth | Nodes | Time | NPS |
 |-----------|-------|-------|-----|
-| 1 | 20 | 104 µs | 190K |
-| 2 | 400 | 1.16 ms | 344K |
-| 3 | 8 902 | 32 ms | 277K |
-| 4 | 197 281 | 651 ms | 302K |
-
+| 1 | 20 | 34.10 µs | 586.51K |
+| 2 | 400 | 10.80 ms | 37.04K |
+| 3 | 8 902 | 31.61 ms | 281.59K |
+| 4 | 197 281 | 424.91 ms | 464.29K |
+| 5 | 4.87M | 5.50 s | 884.64K |
+| 6 | 119.06M | 116.28 s | 1.02M |
 
 ---
 
