@@ -1240,7 +1240,7 @@ class MoveGen:
     
     def list_all_pawn_captures(board_obj, color) -> list[int]:
         """
-        Generate all valid pawn capture moves for the specified color, including en passant.
+        Generate all valid pawn capture moves (include promotions) for the specified color, including en passant.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
@@ -1253,11 +1253,13 @@ class MoveGen:
         en_passant_square = board_obj.en_passant_square
 
         if color == WHITE:
+            empty_board = (~board_obj.all_board_occupied_squares) & U64
             enemy_board = board_obj.board_occupied_squares[BLACK_INDEX]
             pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
 
             capt1 = (pawn_board << 7) & enemy_board & ~FILE_MASKS[7]
             capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0]
+            promo_push = (pawn_board << 8) & empty_board & RANK_MASKS[7]
 
             while capt1:
                 least_significant_bit = capt1 & -capt1
@@ -1271,6 +1273,12 @@ class MoveGen:
                 capt2 ^= least_significant_bit
                 append(to * 65 - 9)
 
+            while promo_push:
+                least_significant_bit = promo_push & -promo_push
+                to = least_significant_bit.bit_length() - 1
+                promo_push ^= least_significant_bit
+                append(to * 65 - 8)
+
             if en_passant_square:
                 en_passant_square_mask = 1 << en_passant_square
                 en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
@@ -1281,11 +1289,13 @@ class MoveGen:
                     append(from_ | (en_passant_square << 6))
 
         else: 
+            empty_board = (~board_obj.all_board_occupied_squares) & U64
             enemy_board = board_obj.board_occupied_squares[WHITE_INDEX]
             pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
 
             capt1 = (pawn_board >> 7) & enemy_board & ~FILE_MASKS[0]
             capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7]
+            promo_push = (pawn_board >> 8) & empty_board & RANK_MASKS[0]
 
             while capt1:
                 least_significant_bit = capt1 & -capt1
@@ -1298,6 +1308,12 @@ class MoveGen:
                 to = least_significant_bit.bit_length() - 1
                 capt2 ^= least_significant_bit
                 append(to * 65 + 9)
+
+            while promo_push:
+                least_significant_bit = promo_push & -promo_push
+                to = least_significant_bit.bit_length() - 1
+                promo_push ^= least_significant_bit
+                append(to * 65 + 8)
 
             if en_passant_square:
                 en_passant_square_mask = 1 << en_passant_square
@@ -2021,7 +2037,7 @@ class MoveGen:
 
     def list_all_pawn_quiets(board_obj, color) -> list[int]:
         """
-        Generate all quiet pawn moves (non-captures) for the specified color.
+        Generate all quiet pawn moves (non-captures, exclude promotions) for the specified color.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
@@ -2040,7 +2056,7 @@ class MoveGen:
             empty_board = (~all_occ) & U64
             pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
 
-            move1 = (pawn_board << 8) & empty_board
+            move1 = (pawn_board << 8) & empty_board & ~RANK_MASKS[7]
             move2 = ((move1 & RANK_MASKS[2]) << 8) & empty_board
 
             while move1:
@@ -2059,7 +2075,7 @@ class MoveGen:
             empty_board = (~all_occ) & U64
             pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
 
-            move1 = (pawn_board >> 8) & empty_board
+            move1 = (pawn_board >> 8) & empty_board & ~RANK_MASKS[0]
             move2 = ((move1 & RANK_MASKS[5]) >> 8) & empty_board
 
             while move1:
