@@ -227,6 +227,11 @@ class Board:
             self.castling_rights = castling_rights
             self.en_passant_square = en_passant_square
             self.position_has_loaded = True 
+
+            if self.mailbox:
+                for square in range(64):
+                    piece_type = self.get_piece_type_and_color(square)
+                    self.mailbox[square] = piece_type if piece_type else EMPTY
         else:
             print("\033[31mFEN string is invalid.\033[0m")
 
@@ -519,6 +524,8 @@ class Board:
         This version is primarily used by engines as it also updates the
         game phase and the middlegame/endgame evaluation scores.
 
+        Before calling this function, the variables: mailbox, phase, eg_score and mg score must be defined.
+        
         Args:
             move (int): Encoded move value.
             side_to_move (int): Side color (WHITE=1 or BLACK=-1).
@@ -534,8 +541,8 @@ class Board:
         from_bitboard = 1 << from_
         to_bitboard = 1 << to
 
-        from_piece = self.get_piece_type_with_mask(from_bitboard)
-        to_piece = self.get_piece_type_with_mask(to_bitboard)
+        from_piece = abs(self.mailbox[from_])
+        to_piece = abs(self.mailbox[to])
 
         INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
         ATT_INDEX = 1 - INDEX
@@ -767,6 +774,24 @@ class Board:
         self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~from_bitboard) | to_bitboard
         self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
 
+        if promotion_piece:
+            self.mailbox[to] = promotion_piece if side_to_move == WHITE else -promotion_piece
+        else:
+            self.mailbox[to] = self.mailbox[from_]
+        
+        self.mailbox[from_] = EMPTY
+
+        if from_piece == PAWN and not promotion_piece and to == en_passant_prev:
+            self.mailbox[to - 8 if side_to_move == WHITE else to + 8] = EMPTY
+        elif from_piece == KING:
+            d = to - from_
+            if d == 2:
+                self.mailbox[5 if side_to_move == WHITE else 61] = self.mailbox[7 if side_to_move == WHITE else 63]
+                self.mailbox[7 if side_to_move == WHITE else 63] = EMPTY
+            elif d == -2:
+                self.mailbox[3 if side_to_move == WHITE else 59] = self.mailbox[0 if side_to_move == WHITE else 56]
+                self.mailbox[0 if side_to_move == WHITE else 56] = EMPTY
+
         return undo
     
 
@@ -875,6 +900,8 @@ class Board:
         This version is primarily used by engines as it also updates the
         game phase and the middlegame/endgame evaluation scores.
 
+        Before calling this function, the variables: mailbox, phase, eg_score and mg score must be defined.
+
         Args:
             undo (tuple): Undo information for the move.
             side_to_move (int): Side color (WHITE=1 or BLACK=-1).
@@ -898,6 +925,14 @@ class Board:
         INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
         ATT_INDEX = 1 - INDEX
 
+        color_sign = 1 if side_to_move == WHITE else -1
+        self.mailbox[from_] = from_piece * color_sign
+
+        if to_piece == 0:
+            self.mailbox[to] = EMPTY
+        else:
+            self.mailbox[to] = to_piece * (-color_sign)
+
         self.castling_rights = castling_rights_prev
 
         if from_piece == KING:
@@ -908,6 +943,9 @@ class Board:
 
                 self.rook = (self.rook & ~rook_to_mask) | rook_from_mask
                 self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_to_mask) | rook_from_mask
+                
+                self.mailbox[7 if side_to_move == WHITE else 63] = self.mailbox[5 if side_to_move == WHITE else 61]
+                self.mailbox[5 if side_to_move == WHITE else 61] = EMPTY
 
             elif d == -2:
                 rook_from_mask = 1 << (0 if side_to_move == WHITE else 56)
@@ -915,6 +953,9 @@ class Board:
 
                 self.rook = (self.rook & ~rook_to_mask) | rook_from_mask
                 self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_to_mask) | rook_from_mask
+                
+                self.mailbox[0 if side_to_move == WHITE else 56] = self.mailbox[3 if side_to_move == WHITE else 59]
+                self.mailbox[3 if side_to_move == WHITE else 59] = EMPTY
 
         if from_piece == PAWN:
             if promotion_piece:
@@ -939,6 +980,9 @@ class Board:
                     captured_pawn_bitboard = 1 << captured_pawn_square
                     self.pawn |= captured_pawn_bitboard
                     self.board_occupied_squares[ATT_INDEX] |= captured_pawn_bitboard
+                    
+                    self.mailbox[captured_pawn_square] = PAWN * (-color_sign)
+                    self.mailbox[to] = EMPTY
 
         elif from_piece == BISHOP:
             self.bishop = (self.bishop & ~to_bitboard) | from_bitboard
