@@ -64,6 +64,12 @@ class Board:
         self.king_square = [4, 60]
 
 
+    def innit_mailbox(self) -> None:
+        """Initialize the mailbox representation of the board."""
+
+        self.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 7 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
+
+
     def load_board(self, fen) -> None:
         """
         Load a custom board position.
