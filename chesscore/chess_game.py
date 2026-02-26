@@ -2019,6 +2019,376 @@ class MoveGen:
         return list_move
 
 
+    def list_all_pawn_quiets(board_obj, color) -> list[int]:
+        """
+        Generate all quiet pawn moves (non-captures) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_p_quiets = []
+        append = list_p_quiets.append
+
+        all_occ = board_obj.all_board_occupied_squares
+
+        if color == WHITE:
+            empty_board = (~all_occ) & U64
+            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
+
+            move1 = (pawn_board << 8) & empty_board
+            move2 = ((move1 & RANK_MASKS[2]) << 8) & empty_board
+
+            while move1:
+                least_significant_bit = move1 & -move1
+                to = least_significant_bit.bit_length() - 1
+                move1 ^= least_significant_bit
+                append(to * 65 - 8)
+
+            while move2:
+                least_significant_bit = move2 & -move2
+                to = least_significant_bit.bit_length() - 1
+                move2 ^= least_significant_bit
+                append(to * 65 - 16)
+
+        else:
+            empty_board = (~all_occ) & U64
+            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
+
+            move1 = (pawn_board >> 8) & empty_board
+            move2 = ((move1 & RANK_MASKS[5]) >> 8) & empty_board
+
+            while move1:
+                least_significant_bit = move1 & -move1
+                to = least_significant_bit.bit_length() - 1
+                move1 ^= least_significant_bit
+                append(to * 65 + 8)
+
+            while move2:
+                least_significant_bit = move2 & -move2
+                to = least_significant_bit.bit_length() - 1
+                move2 ^= least_significant_bit
+                append(to * 65 + 16)
+
+        return list_p_quiets
+
+
+    def list_all_knight_quiets(board_obj, color) -> list[int]:
+        """
+        Generate all quiet knight moves (non-captures) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_k_quiets = []
+        append = list_k_quiets.append
+
+        knight_board = board_obj.knight & board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+        empty_squares = (~board_obj.all_board_occupied_squares) & U64
+
+        while knight_board:
+            least_significant_bit = knight_board & -knight_board
+            from_ = least_significant_bit.bit_length() - 1
+            knight_board &= knight_board - 1
+
+            to_possibilities = KNIGHT_TABLE[from_] & empty_squares
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+
+        return list_k_quiets
+
+
+    @staticmethod
+    def list_all_rook_quiets(board_obj, color) -> list[int]:
+        """
+        Generate all quiet rook moves (non-captures) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_r_quiets = []
+        append = list_r_quiets.append
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        rook = board_obj.rook & own_occupied_squares
+
+        occ = board_obj.all_board_occupied_squares
+        empty_squares = (~occ) & U64
+
+        while rook:
+            least_significant_bit = rook & -rook
+            from_ = least_significant_bit.bit_length() - 1
+
+            rook &= rook - 1
+
+            occ_rel = occ & ROOK_MASK[from_]
+            idx = ((occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+
+            to_possibilities = ROOK_TABLE[from_][idx] & empty_squares
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+
+        return list_r_quiets
+
+
+    @staticmethod
+    def list_all_bishop_quiets(board_obj, color) -> list[int]:
+        """
+        Generate all quiet bishop moves (non-captures) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_b_quiets = []
+        append = list_b_quiets.append
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        bishop = board_obj.bishop & own_occupied_squares
+
+        occ = board_obj.all_board_occupied_squares
+        empty_squares = (~occ) & U64
+
+        while bishop:
+            least_significant_bit = bishop & -bishop
+            from_ = least_significant_bit.bit_length() - 1
+
+            bishop &= bishop - 1
+
+            occ_rel = occ & BISHOP_MASK[from_]
+            idx = ((occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+
+            to_possibilities = BISHOP_TABLE[from_][idx] & empty_squares
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+
+        return list_b_quiets
+
+
+    @staticmethod
+    def list_all_queen_quiets(board_obj, color) -> list[int]:
+        """
+        Generate all quiet queen moves (non-captures) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_q_quiets = []
+        append = list_q_quiets.append
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        queen = board_obj.queen & own_occupied_squares
+
+        occ = board_obj.all_board_occupied_squares
+        empty_squares = (~occ) & U64
+
+        while queen:
+            least_significant_bit = queen & -queen
+            from_ = least_significant_bit.bit_length() - 1
+
+            queen &= queen - 1
+
+            bishop_occ_rel = occ & BISHOP_MASK[from_]
+            bishop_idx = ((bishop_occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+
+            rook_occ_rel = occ & ROOK_MASK[from_]
+            rook_idx = ((rook_occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+
+            to_possibilities = (ROOK_TABLE[from_][rook_idx] | BISHOP_TABLE[from_][bishop_idx]) & empty_squares
+
+            while to_possibilities:
+                least_significant_bit2 = to_possibilities & -to_possibilities
+                to = least_significant_bit2.bit_length() - 1
+                to_possibilities &= to_possibilities - 1
+
+                append(from_ | (to << 6))
+
+        return list_q_quiets
+
+
+    @staticmethod
+    def list_all_king_quiets(board_obj, color, castling=True) -> list[int]:
+        """
+        Generate all quiet king moves (non-captures) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            castling (optional bool): Whether to include castling moves. Defaults to True.
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_k_quiets = []
+
+        own_occupied_squares = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+
+        king_board = board_obj.king & own_occupied_squares
+
+        empty_squares = (~board_obj.all_board_occupied_squares) & U64
+
+        from_ = king_board.bit_length() - 1
+
+        append = list_k_quiets.append
+
+        to_possibilities = KING_TABLE[from_] & empty_squares
+        while to_possibilities:
+            least_significant_bit2 = to_possibilities & -to_possibilities
+            to = least_significant_bit2.bit_length() - 1
+            to_possibilities &= to_possibilities - 1
+
+            append(from_ | (to << 6))
+
+        if castling:
+            list_k_quiets.extend(MoveGen.list_all_castling_move(board_obj, color))
+
+        return list_k_quiets
+
+
+    @staticmethod
+    def list_all_legal_quiets(board_obj, side, castling=True) -> list[int]:
+        """
+        Generate all legal quiet moves (non-captures) for a side (excluding moves leaving king in check).
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+            castling (bool, optional): Whether to include castling moves. Defaults to True.
+
+        Returns:
+            list: Encoded legal quiet moves as (from_square | (to_square << 6)).
+        """
+
+        list_all_quiets = []
+        append = list_all_quiets.append
+
+        make = board_obj.make_move
+        unmake = board_obj.unmake_move
+        attackers_to = GameState.attackers_to
+        king_square = board_obj.king_square
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+
+        gens = (
+            MoveGen.list_all_pawn_quiets,
+            MoveGen.list_all_knight_quiets,
+            MoveGen.list_all_bishop_quiets,
+            MoveGen.list_all_rook_quiets,
+            MoveGen.list_all_queen_quiets,
+            lambda b, s: MoveGen.list_all_king_quiets(b, s, castling),
+        )
+
+        for gen in gens:
+            for mv in gen(board_obj, side):
+                undo = make(mv, side)
+                if not attackers_to(board_obj, side, king_square[INDEX]):
+                    append(mv)
+                unmake(undo, side)
+
+        return list_all_quiets
+
+
+    @staticmethod
+    def generate_all_quiets(board_obj, side, castling=True):
+        """
+        Generate all legal quiet moves (non-captures) for a side (excluding moves leaving king in check).
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            side (int): Side color (WHITE=1 or BLACK=-1).
+            castling (bool, optional): Whether to include castling moves. Defaults to True.
+
+        Yields:
+            generator: Yields encoded quiet moves as (from_square | (to_square << 6)).
+        """
+
+        make = board_obj.make_move
+        unmake = board_obj.unmake_move
+        attackers_to = GameState.attackers_to
+        king_square = board_obj.king_square
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+
+        for e in MoveGen.list_all_king_quiets(board_obj, side, castling):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_queen_quiets(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_knight_quiets(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_bishop_quiets(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_rook_quiets(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+        for e in MoveGen.list_all_pawn_quiets(board_obj, side):
+            undo = make(e, side)
+            legal = not attackers_to(board_obj, side, king_square[INDEX])
+            unmake(undo, side)
+            if legal:
+                yield e
+
+
 
 class GameState:
     @staticmethod
@@ -2143,6 +2513,7 @@ class GameState:
         in_check = GameState.attackers_to(board_obj, side, king_square)
         board_obj.unmake_move(undo, side)
         return not in_check
+
 
 
 class ChessDisplay:
@@ -2813,6 +3184,7 @@ class ChessCore:
             return outcome
 
         return None
+
 
 
 if __name__ == "__main__":
