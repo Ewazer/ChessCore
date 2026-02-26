@@ -1,6 +1,6 @@
 # ChessCore
 
-> **Version 3.0.3** by Leroux Lubin
+> **Version 3.0.5** by Leroux Lubin
 
 ChessCore is an optimized chess core, written entirely in **native Python** (no external dependencies required).
 
@@ -194,6 +194,7 @@ Initializes the board in the starting position.
 | Method | Signature | Description |
 |---------|-----------|-------------|
 | `init_board()` | `→ None` | Resets the board to the starting position |
+| `init_board_for_engine()` | `→ None` | Initializes engine-specific state: `mailbox`, `mg_score`, `eg_score`, `phase` — call after `init_board()` or `load_board()` |
 | `load_board(fen)` | `fen: str → None` | Loads a position from a complete FEN string |
 | `get_piece_type(square)` | `square: int → int \| None` | Returns the piece type on a square (0-63), or `None` |
 | `get_piece_type_with_mask(mask)` | `mask: int → int \| None` | Same but with a bitboard mask |
@@ -260,22 +261,14 @@ Pseudo-legal and legal move generation. All methods are static.
 | Method | Signature | Description |
 |---------|-----------|-------------|
 | `list_all_pawn_moves(board_obj, color)` | `→ list[int]` | All pawn moves (advance, double advance, captures, en passant) |
-| `list_all_pawn_captures(board_obj, color)` | `→ list[int]` | Only pawn captures (captures, en passant) |
 | `list_all_knight_moves(board_obj, color)` | `→ list[int]` | All knight moves |
-| `list_all_knight_captures(board_obj, color)` | `→ list[int]` | Only knight captures |
 | `list_all_bishop_moves(board_obj, color)` | `→ list[int]` | All bishop moves (magic bitboards) |
-| `list_all_bishop_captures(board_obj, color)` | `→ list[int]` | Only bishop captures |
 | `list_all_rook_moves(board_obj, color)` | `→ list[int]` | All rook moves (magic bitboards) |
-| `list_all_rook_captures(board_obj, color)` | `→ list[int]` | Only rook captures |
 | `list_all_queen_moves(board_obj, color)` | `→ list[int]` | All queen moves (rook + bishop combination) |
-| `list_all_queen_captures(board_obj, color)` | `→ list[int]` | Only queen captures |
 | `list_all_king_moves(board_obj, color, castling=True)` | `→ list[int]` | All king moves + castling |
-| `list_all_king_captures(board_obj, color)` | `→ list[int]` | Only king captures |
 | `list_all_castling_move(board_obj, color)` | `→ list[int]` | Castling moves only |
 | `list_all_legal_moves(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
-| `list_all_legal_captures(board_obj, side)` | `→ list[int]` | All legal captures (filters moves leaving the king in check) |
 | `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
-| `generate_all_captures(board_obj, side)` | `→ generator` | Legal capture generator (yield) |
 | `list_all_piece_move(board_obj, square, piece_value)` | `→ list[int]` | Moves of a specific piece from a square (only used by `print_highlighted_legal_move` in ChessDisplay) |
 
 **Common parameters:**
@@ -678,6 +671,34 @@ for move in MoveGen.generate_all_moves(board, WHITE):
 ### Make / Unmake Search (incremental evaluation)
 
 `make_move_search` / `unmake_move_search` maintain `mg_score`, `eg_score`, and `phase` incrementally, no need to recompute the full evaluation at each node. Must be initialized before use (e.g., by computing scores from scratch once at the root).
+
+### Mailbox and `init_board_for_engine`
+
+The **mailbox** is a flat 64-element list (`board.mailbox[0..63]`) that mirrors the bitboard state: each cell holds the signed piece type at that square (positive = white, negative = black, `0` = empty).
+
+It is designed for fast **O(1) piece-type lookup** without iterating over bitboards, which is especially useful in evaluation and search code.
+
+```python
+from chess_game import Board, MoveGen, WHITE, BLACK
+from chess_game import PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, EMPTY
+
+board = Board()
+board.init_board_for_engine()  # sets mailbox + engine scores to initial values
+
+# Read piece at a square 
+print(board.mailbox[0])   # → 4  (white ROOK on a1)
+print(board.mailbox[63])  # → -4 (black ROOK on h8)
+print(board.mailbox[28])  # → 0  (empty square)
+
+# Use make_move_search / unmake_move_search to keep mailbox in sync
+moves = MoveGen.list_all_legal_moves(board, WHITE)
+for move in moves:
+    undo = board.make_move_search(move, WHITE)
+    # board.mailbox, mg_score, eg_score and phase are all up to date here
+    board.unmake_move_search(undo, WHITE)
+```
+
+> The mailbox is **not** automatically initialized by `Board()`. You must call `init_board_for_engine()` (or manually set it) before using `make_move_search` / `unmake_move_search`.
 
 ---
 
