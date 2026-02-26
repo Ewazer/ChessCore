@@ -269,7 +269,7 @@ Pseudo-legal and legal move generation. All methods are static.
 | `list_all_castling_move(board_obj, color)` | `→ list[int]` | Castling moves only |
 | `list_all_legal_moves(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
 | `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
-| `list_all_pawn_captures(board_obj, color)` | `→ list[int]` | Pawn capture moves only (captures + en passant, no quiet pushes) |
+| `list_all_pawn_captures(board_obj, color)` | `→ list[int]` | Pawn capture moves only (captures + en passant, no quiet pushes, including promotions) |
 | `list_all_knight_captures(board_obj, color)` | `→ list[int]` | Knight capture moves only |
 | `list_all_bishop_captures(board_obj, color)` | `→ list[int]` | Bishop capture moves only (magic bitboards) |
 | `list_all_rook_captures(board_obj, color)` | `→ list[int]` | Rook capture moves only (magic bitboards) |
@@ -277,7 +277,7 @@ Pseudo-legal and legal move generation. All methods are static.
 | `list_all_king_captures(board_obj, color)` | `→ list[int]` | King capture moves only |
 | `list_all_legal_captures(board_obj, side)` | `→ list[int]` | All legal captures (filters moves leaving the king in check) |
 | `generate_all_captures(board_obj, side)` | `→ generator` | Legal capture generator (yield) |
-| `list_all_pawn_quiets(board_obj, color)` | `→ list[int]` | Pawn quiet moves only (advances, no captures, no en passant) |
+| `list_all_pawn_quiets(board_obj, color)` | `→ list[int]` | Pawn quiet moves only (advances, no captures, no en passant, excluding promotions) |
 | `list_all_knight_quiets(board_obj, color)` | `→ list[int]` | Knight quiet moves only (non-captures) |
 | `list_all_bishop_quiets(board_obj, color)` | `→ list[int]` | Bishop quiet moves only (magic bitboards) |
 | `list_all_rook_quiets(board_obj, color)` | `→ list[int]` | Rook quiet moves only (magic bitboards) |
