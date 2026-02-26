@@ -15,7 +15,7 @@ class Board:
         'pawn', 'knight', 'bishop', 'rook', 'queen', 'king','board_occupied_squares', 'all_board_occupied_squares', 'king_square',
         'move_history', 'side_to_move', 'counter_halfmove_without_capture','castling_rights', 'position_has_loaded', 'en_passant_square',
         'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','start_coordinate', 'end_coordinate', 'start_value', 
-        'end_value', 'capture_value','mg_score', 'eg_score', 'phase'
+        'end_value', 'capture_value','mg_score', 'eg_score', 'phase', 'mailbox', "innit_mailbox"
     )
 
     def __init__(self):
@@ -32,11 +32,6 @@ class Board:
         self.last_position_hash = self.get_position_hash()
         self.position_hash_history = {self.last_position_hash: 1}
         self.encoded_move_in_progress = None
-
-        #for engine
-        self.mg_score = 0
-        self.eg_score = 0
-        self.phase = 0
     
 
     def init_board(self) -> None:
@@ -64,10 +59,13 @@ class Board:
         self.king_square = [4, 60]
 
 
-    def innit_mailbox(self) -> None:
-        """Initialize the mailbox representation of the board."""
+    def init_board_for_engine(self) -> None:
+        """Initialize the board for engine use, including setting up the mailbox and evaluation scores."""
 
-        self.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 7 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
+        self.mg_score = 0
+        self.eg_score = 0
+        self.phase = 0
+        self.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 8 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
 
 
     def load_board(self, fen) -> None:
