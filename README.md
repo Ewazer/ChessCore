@@ -419,11 +419,11 @@ print(CR_WK)
 |-----------|--------|-------------|
 | `EMPTY` | `0` | Empty square |
 | `PAWN` | `1` | Pawn |
-| `KNIGHT` | `3` | Knight |
-| `BISHOP` | `4` | Bishop |
-| `ROOK` | `5` | Rook |
-| `KING` | `6` | King |
-| `QUEEN` | `7` | Queen |
+| `KNIGHT` | `2` | Knight |
+| `BISHOP` | `3` | Bishop |
+| `ROOK` | `4` | Rook |
+| `KING` | `5` | King |
+| `QUEEN` | `6` | Queen |
 
 > Black pieces are represented by the negative value.
 
