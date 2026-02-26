@@ -1240,7 +1240,7 @@ class MoveGen:
     
     def list_all_pawn_captures(board_obj, color) -> list[int]:
         """
-        Generate all valid pawn capture moves (include promotions) for the specified color, including en passant.
+        Generate all valid pawn capture moves (including promotions) for the specified color, including en passant.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
@@ -2037,7 +2037,7 @@ class MoveGen:
 
     def list_all_pawn_quiets(board_obj, color) -> list[int]:
         """
-        Generate all quiet pawn moves (non-captures, exclude promotions) for the specified color.
+        Generate all quiet pawn moves (non-captures, excluding promotions) for the specified color.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
