@@ -15,7 +15,7 @@ class Board:
         'pawn', 'knight', 'bishop', 'rook', 'queen', 'king','board_occupied_squares', 'all_board_occupied_squares', 'king_square',
         'move_history', 'side_to_move', 'counter_halfmove_without_capture','castling_rights', 'position_has_loaded', 'en_passant_square',
         'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','start_coordinate', 'end_coordinate', 'start_value', 
-        'end_value', 'capture_value','mg_score', 'eg_score', 'phase', 'mailbox', "innit_mailbox"
+        'end_value', 'capture_value','mg_score', 'eg_score', 'phase', 'mailbox'
     )
 
     def __init__(self):
