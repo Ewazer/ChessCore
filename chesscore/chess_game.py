@@ -525,12 +525,13 @@ class Board:
         game phase and the middlegame/endgame evaluation scores.
 
         Before calling this function, the variables: mailbox, phase, eg_score and mg score must be defined.
-        
+            Ex: board_obj.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 7 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
+
         Args:
             move (int): Encoded move value.
             side_to_move (int): Side color (WHITE=1 or BLACK=-1).
             promotion_piece (int, optional): Piece type to promote to (QUEEN, ROOK, BISHOP, KNIGHT), or 0 for no promotion.
-
+        
         Returns:
             undo (tuple): Undo information for the move.
         """
@@ -901,6 +902,7 @@ class Board:
         game phase and the middlegame/endgame evaluation scores.
 
         Before calling this function, the variables: mailbox, phase, eg_score and mg score must be defined.
+            Ex: board_obj.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 7 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
 
         Args:
             undo (tuple): Undo information for the move.
