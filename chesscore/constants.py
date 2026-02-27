@@ -53,6 +53,7 @@ __all__ = [
     "BISHOP_VALUE",
     "ROOK_VALUE",
     "QUEEN_VALUE",
+    "PIECE_VALUES",
     "MVV_LVA",
 ]
 
@@ -401,3 +402,4 @@ pst = (
         )
      )
 )
+
