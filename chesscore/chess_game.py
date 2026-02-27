@@ -2510,7 +2510,7 @@ class GameState:
     
 
     @staticmethod
-    def get_all_attacker(board_obj, square, occupied = None) -> int:
+    def get_all_attackers(board_obj, square, occupied = None) -> int:
         """
         Get all attackers of a square.
 
