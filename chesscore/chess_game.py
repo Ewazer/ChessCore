@@ -1128,7 +1128,8 @@ class Board:
 
 
 
-class MoveGen:      
+class MoveGen:    
+    @staticmethod  
     def list_all_pawn_moves(board_obj, color) -> list[int]:
         """
         Generate all valid pawn moves for the specified color, including en passant.
@@ -1238,6 +1239,7 @@ class MoveGen:
         return list_p_moves
 
     
+    @staticmethod
     def list_all_pawn_captures(board_obj, color) -> list[int]:
         """
         Generate all valid pawn capture moves (excluding promotion captures) for the specified color, including en passant.
@@ -1311,6 +1313,7 @@ class MoveGen:
         return list_p_captures
 
 
+    @staticmethod
     def list_all_pawn_promotions(board_obj, color) -> list[int]:
         """
         Generate all pawn promotion moves (push and capture promotions) for the specified color.
@@ -1383,6 +1386,7 @@ class MoveGen:
         return list_p_promotions
     
 
+    @staticmethod
     def list_all_knight_moves(board_obj, color) -> list[int]:
         """
         Generate all valid knight moves for the specified color.
@@ -1420,6 +1424,7 @@ class MoveGen:
         return list_k_moves
     
 
+    @staticmethod
     def list_all_knight_captures(board_obj, color) -> list[int]:
         """
         Generate all valid knight captures for the specified color.
@@ -2091,6 +2096,7 @@ class MoveGen:
         return list_move
 
 
+    @staticmethod
     def list_all_pawn_quiets(board_obj, color) -> list[int]:
         """
         Generate all quiet pawn moves (non-captures, excluding promotions) for the specified color.
@@ -2149,6 +2155,7 @@ class MoveGen:
         return list_p_quiets
 
 
+    @staticmethod
     def list_all_knight_quiets(board_obj, color) -> list[int]:
         """
         Generate all quiet knight moves (non-captures) for the specified color.
