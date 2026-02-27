@@ -2468,6 +2468,400 @@ class MoveGen:
                 yield e
 
 
+    @staticmethod
+    def get_pawn_moves_categorized(board_obj, color, captures_list, quiets_list, promotions_list):
+        """
+        Generate all pseudo-legal pawn moves, categorized into captures, quiets and promotions.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            quiets_list (list): List to append quiet moves to.
+            promotions_list (list): List to append promotion moves to.
+        """
+
+        all_occ = board_obj.all_board_occupied_squares
+        empty = ~all_occ & U64
+        en_passant_square = board_obj.en_passant_square
+
+        if color == WHITE:
+            own_occ = board_obj.board_occupied_squares[WHITE_INDEX]
+            enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX]
+            pawn = board_obj.pawn & own_occ
+
+            push1 = (pawn << 8) & empty
+            push2 = ((push1 & RANK_MASKS[2]) << 8) & empty
+            capt_left = (pawn << 7) & enemy_occ & ~FILE_MASKS[7]
+            capt_right = (pawn << 9) & enemy_occ & ~FILE_MASKS[0]
+
+            promo_mask = RANK_MASKS[7]
+            push1_quiet = push1 & ~promo_mask
+            push1_promo = push1 & promo_mask
+            capt_left_nopromo = capt_left & ~promo_mask
+            capt_left_promo = capt_left & promo_mask
+            capt_right_nopromo = capt_right & ~promo_mask
+            capt_right_promo = capt_right & promo_mask
+
+            while push1_quiet:
+                least_significant_bit = push1_quiet & -push1_quiet
+                to = least_significant_bit.bit_length() - 1
+                push1_quiet &= push1_quiet - 1
+                quiets_list.append((to - 8) | (to << 6))
+
+            while push2:
+                least_significant_bit = push2 & -push2
+                to = least_significant_bit.bit_length() - 1
+                push2 &= push2 - 1
+                quiets_list.append((to - 16) | (to << 6))
+
+            while capt_left_nopromo:
+                least_significant_bit = capt_left_nopromo & -capt_left_nopromo
+                to = least_significant_bit.bit_length() - 1
+                capt_left_nopromo &= capt_left_nopromo - 1
+                captures_list.append((to - 7) | (to << 6))
+
+            while capt_right_nopromo:
+                least_significant_bit = capt_right_nopromo & -capt_right_nopromo
+                to = least_significant_bit.bit_length() - 1
+                capt_right_nopromo &= capt_right_nopromo - 1
+                captures_list.append((to - 9) | (to << 6))
+
+            while push1_promo:
+                least_significant_bit = push1_promo & -push1_promo
+                to = least_significant_bit.bit_length() - 1
+                push1_promo &= push1_promo - 1
+                promotions_list.append((to - 8) | (to << 6))
+
+            while capt_left_promo:
+                least_significant_bit = capt_left_promo & -capt_left_promo
+                to = least_significant_bit.bit_length() - 1
+                capt_left_promo &= capt_left_promo - 1
+                promotions_list.append((to - 7) | (to << 6))
+
+            while capt_right_promo:
+                least_significant_bit = capt_right_promo & -capt_right_promo
+                to = least_significant_bit.bit_length() - 1
+                capt_right_promo &= capt_right_promo - 1
+                promotions_list.append((to - 9) | (to << 6))
+
+            if en_passant_square:
+                ep_mask = 1 << en_passant_square
+                attackers = pawn & (((ep_mask & ~FILE_MASKS[0]) >> 9) | ((ep_mask & ~FILE_MASKS[7]) >> 7))
+                while attackers:
+                    least_significant_bit = attackers & -attackers
+                    from_ = least_significant_bit.bit_length() - 1
+                    attackers &= attackers - 1
+                    captures_list.append(from_ | (en_passant_square << 6))
+
+        else:
+            own_occ = board_obj.board_occupied_squares[BLACK_INDEX]
+            enemy_occ = board_obj.board_occupied_squares[WHITE_INDEX]
+            pawn = board_obj.pawn & own_occ
+
+            push1 = (pawn >> 8) & empty
+            push2 = ((push1 & RANK_MASKS[5]) >> 8) & empty
+            capt_left = (pawn >> 7) & enemy_occ & ~FILE_MASKS[0]
+            capt_right = (pawn >> 9) & enemy_occ & ~FILE_MASKS[7]
+
+            promo_mask = RANK_MASKS[0]
+            push1_quiet = push1 & ~promo_mask
+            push1_promo = push1 & promo_mask
+            capt_left_nopromo = capt_left & ~promo_mask
+            capt_left_promo = capt_left & promo_mask
+            capt_right_nopromo = capt_right & ~promo_mask
+            capt_right_promo = capt_right & promo_mask
+
+            while push1_quiet:
+                least_significant_bit = push1_quiet & -push1_quiet
+                to = least_significant_bit.bit_length() - 1
+                push1_quiet &= push1_quiet - 1
+                quiets_list.append((to + 8) | (to << 6))
+
+            while push2:
+                least_significant_bit = push2 & -push2
+                to = least_significant_bit.bit_length() - 1
+                push2 &= push2 - 1
+                quiets_list.append((to + 16) | (to << 6))
+
+            while capt_left_nopromo:
+                least_significant_bit = capt_left_nopromo & -capt_left_nopromo
+                to = least_significant_bit.bit_length() - 1
+                capt_left_nopromo &= capt_left_nopromo - 1
+                captures_list.append((to + 7) | (to << 6))
+
+            while capt_right_nopromo:
+                least_significant_bit = capt_right_nopromo & -capt_right_nopromo
+                to = least_significant_bit.bit_length() - 1
+                capt_right_nopromo &= capt_right_nopromo - 1
+                captures_list.append((to + 9) | (to << 6))
+
+            while push1_promo:
+                least_significant_bit = push1_promo & -push1_promo
+                to = least_significant_bit.bit_length() - 1
+                push1_promo &= push1_promo - 1
+                promotions_list.append((to + 8) | (to << 6))
+
+            while capt_left_promo:
+                least_significant_bit = capt_left_promo & -capt_left_promo
+                to = least_significant_bit.bit_length() - 1
+                capt_left_promo &= capt_left_promo - 1
+                promotions_list.append((to + 7) | (to << 6))
+
+            while capt_right_promo:
+                least_significant_bit = capt_right_promo & -capt_right_promo
+                to = least_significant_bit.bit_length() - 1
+                capt_right_promo &= capt_right_promo - 1
+                promotions_list.append((to + 9) | (to << 6))
+
+            if en_passant_square:
+                ep_mask = 1 << en_passant_square
+                attackers = pawn & (((ep_mask & ~FILE_MASKS[0]) << 7) | ((ep_mask & ~FILE_MASKS[7]) << 9))
+                while attackers:
+                    least_significant_bit = attackers & -attackers
+                    from_ = least_significant_bit.bit_length() - 1
+                    attackers &= attackers - 1
+                    captures_list.append(from_ | (en_passant_square << 6))
+
+
+    @staticmethod
+    def get_knight_moves_categorized(board_obj, color, captures_list, quiets_list):
+        """
+        Generate all pseudo-legal knight moves, categorized into captures and quiets.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            quiets_list (list): List to append quiet moves to.
+        """
+
+        own_occ = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+        enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+        empty_squares = ~board_obj.all_board_occupied_squares & U64
+
+        knight = board_obj.knight & own_occ
+
+        while knight:
+            least_significant_bit = knight & -knight
+            from_ = least_significant_bit.bit_length() - 1
+            knight &= knight - 1
+
+            attacks = KNIGHT_TABLE[from_]
+
+            capts = attacks & enemy_occ
+            while capts:
+                least_significant_bit2 = capts & -capts
+                to = least_significant_bit2.bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+            qts = attacks & empty_squares
+            while qts:
+                least_significant_bit2 = qts & -qts
+                to = least_significant_bit2.bit_length() - 1
+                qts &= qts - 1
+                quiets_list.append(from_ | (to << 6))
+
+
+    @staticmethod
+    def get_bishop_moves_categorized(board_obj, color, captures_list, quiets_list):
+        """
+        Generate all pseudo-legal bishop moves, categorized into captures and quiets.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            quiets_list (list): List to append quiet moves to.
+        """
+
+        own_occ = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+        enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+        all_occ = board_obj.all_board_occupied_squares
+        empty_squares = ~all_occ & U64
+
+        bishop = board_obj.bishop & own_occ
+
+        while bishop:
+            least_significant_bit = bishop & -bishop
+            from_ = least_significant_bit.bit_length() - 1
+            bishop &= bishop - 1
+
+            occ_rel = all_occ & BISHOP_MASK[from_]
+            idx = ((occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+            attacks = BISHOP_TABLE[from_][idx]
+
+            capts = attacks & enemy_occ
+            while capts:
+                least_significant_bit2 = capts & -capts
+                to = least_significant_bit2.bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+            qts = attacks & empty_squares
+            while qts:
+                least_significant_bit2 = qts & -qts
+                to = least_significant_bit2.bit_length() - 1
+                qts &= qts - 1
+                quiets_list.append(from_ | (to << 6))
+
+
+    @staticmethod
+    def get_rook_moves_categorized(board_obj, color, captures_list, quiets_list):
+        """
+        Generate all pseudo-legal rook moves, categorized into captures and quiets.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            quiets_list (list): List to append quiet moves to.
+        """
+
+        own_occ = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+        enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+        all_occ = board_obj.all_board_occupied_squares
+        empty_squares = ~all_occ & U64
+
+        rook = board_obj.rook & own_occ
+
+        while rook:
+            least_significant_bit = rook & -rook
+            from_ = least_significant_bit.bit_length() - 1
+            rook &= rook - 1
+
+            occ_rel = all_occ & ROOK_MASK[from_]
+            idx = ((occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+            attacks = ROOK_TABLE[from_][idx]
+
+            capts = attacks & enemy_occ
+            while capts:
+                least_significant_bit2 = capts & -capts
+                to = least_significant_bit2.bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+            qts = attacks & empty_squares
+            while qts:
+                least_significant_bit2 = qts & -qts
+                to = least_significant_bit2.bit_length() - 1
+                qts &= qts - 1
+                quiets_list.append(from_ | (to << 6))
+
+
+    @staticmethod
+    def get_queen_moves_categorized(board_obj, color, captures_list, quiets_list):
+        """
+        Generate all pseudo-legal queen moves, categorized into captures and quiets.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            quiets_list (list): List to append quiet moves to.
+        """
+
+        own_occ = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+        enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+        all_occ = board_obj.all_board_occupied_squares
+        empty_squares = ~all_occ & U64
+
+        queen = board_obj.queen & own_occ
+
+        while queen:
+            least_significant_bit = queen & -queen
+            from_ = least_significant_bit.bit_length() - 1
+            queen &= queen - 1
+
+            bishop_occ_rel = all_occ & BISHOP_MASK[from_]
+            bishop_idx = ((bishop_occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+
+            rook_occ_rel = all_occ & ROOK_MASK[from_]
+            rook_idx = ((rook_occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+
+            attacks = ROOK_TABLE[from_][rook_idx] | BISHOP_TABLE[from_][bishop_idx]
+
+            capts = attacks & enemy_occ
+            while capts:
+                least_significant_bit2 = capts & -capts
+                to = least_significant_bit2.bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+            qts = attacks & empty_squares
+            while qts:
+                least_significant_bit2 = qts & -qts
+                to = least_significant_bit2.bit_length() - 1
+                qts &= qts - 1
+                quiets_list.append(from_ | (to << 6))
+
+
+    @staticmethod
+    def get_king_moves_categorized(board_obj, color, captures_list, quiets_list, castling=True):
+        """
+        Generate all pseudo-legal king moves, categorized into captures and quiets.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            quiets_list (list): List to append quiet moves to.
+            castling (bool, optional): Whether to include castling moves. Defaults to True.
+        """
+
+        own_occ = board_obj.board_occupied_squares[WHITE_INDEX if color == WHITE else BLACK_INDEX]
+        enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX if color == WHITE else WHITE_INDEX]
+        empty_squares = ~board_obj.all_board_occupied_squares & U64
+
+        king = board_obj.king & own_occ
+        from_ = king.bit_length() - 1
+
+        attacks = KING_TABLE[from_]
+
+        capts = attacks & enemy_occ
+        while capts:
+            least_significant_bit2 = capts & -capts
+            to = least_significant_bit2.bit_length() - 1
+            capts &= capts - 1
+            captures_list.append(from_ | (to << 6))
+
+        qts = attacks & empty_squares
+        while qts:
+            least_significant_bit2 = qts & -qts
+            to = least_significant_bit2.bit_length() - 1
+            qts &= qts - 1
+            quiets_list.append(from_ | (to << 6))
+
+        if castling:
+            for mv in MoveGen.list_all_castling_move(board_obj, color):
+                quiets_list.append(mv)
+
+
+    @staticmethod
+    def get_all_moves_categorized(board_obj, color, captures_list, quiets_list, promotions_list, castling=True):
+        """
+        Generate all pseudo-legal moves for a side, categorized into 3 lists.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Side color (WHITE=1 or BLACK=-1).
+            castling (bool, optional): Whether to include castling moves. Defaults to True.
+
+        Returns:
+            tuple: (captures_list, quiets_list, promotions_list)
+        """
+
+        MoveGen.get_pawn_moves_categorized(board_obj, color, captures_list, quiets_list, promotions_list)
+        MoveGen.get_knight_moves_categorized(board_obj, color, captures_list, quiets_list)
+        MoveGen.get_bishop_moves_categorized(board_obj, color, captures_list, quiets_list)
+        MoveGen.get_rook_moves_categorized(board_obj, color, captures_list, quiets_list)
+        MoveGen.get_queen_moves_categorized(board_obj, color, captures_list, quiets_list)
+        MoveGen.get_king_moves_categorized(board_obj, color, captures_list, quiets_list, castling)
+
+        return captures_list, quiets_list, promotions_list
+
+
 
 class GameState:
     @staticmethod
