@@ -2507,6 +2507,46 @@ class GameState:
             return True
 
         return False
+    
+
+    @staticmethod
+    def get_all_attacker(board_obj, square, occupied = None) -> int:
+        """
+        Get all attackers of a square.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            square (int): Square index (0-63).
+            occupied (int, optional): Bitboard of occupied squares to consider for sliding pieces. If None, uses board_obj.all_board_occupied_squares. Defaults to None.
+
+        Returns:
+            int: Bitboard of all attackers to the square.
+        """
+
+        #for SEE 
+        if occupied is None:
+            occupied = board_obj.all_board_occupied_squares
+
+        bb_attackers = 0
+        occ_sides = board_obj.board_occupied_squares
+
+        bb_attackers |= INVERTED_PAWN_TABLE[WHITE_INDEX][square] & occ_sides[WHITE_INDEX] & board_obj.pawn
+        bb_attackers |= INVERTED_PAWN_TABLE[BLACK_INDEX][square] & occ_sides[BLACK_INDEX] & board_obj.pawn
+
+        bb_attackers |= KNIGHT_TABLE[square] & board_obj.knight
+        bb_attackers |= KING_TABLE[square] & board_obj.king
+
+        rook_like = board_obj.rook | board_obj.queen
+        occ_rel = ROOK_MASK[square] & occupied
+        idx = ((occ_rel * ROOK_MAGIC[square]) & U64) >> ROOK_SHIFT[square]
+        bb_attackers |= ROOK_TABLE[square][idx] & rook_like
+
+        bishop_like = board_obj.bishop | board_obj.queen
+        occ_rel = BISHOP_MASK[square] & occupied
+        idx = ((occ_rel * BISHOP_MAGIC[square]) & U64) >> BISHOP_SHIFT[square]
+        bb_attackers |= BISHOP_TABLE[square][idx] & bishop_like
+
+        return bb_attackers
 
 
     @staticmethod
