@@ -1240,7 +1240,7 @@ class MoveGen:
     
     def list_all_pawn_captures(board_obj, color) -> list[int]:
         """
-        Generate all valid pawn capture moves (including promotions) for the specified color, including en passant.
+        Generate all valid pawn capture moves (excluding promotion captures) for the specified color, including en passant.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
@@ -1253,13 +1253,11 @@ class MoveGen:
         en_passant_square = board_obj.en_passant_square
 
         if color == WHITE:
-            empty_board = (~board_obj.all_board_occupied_squares) & U64
             enemy_board = board_obj.board_occupied_squares[BLACK_INDEX]
             pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
 
-            capt1 = (pawn_board << 7) & enemy_board & ~FILE_MASKS[7]
-            capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0]
-            promo_push = (pawn_board << 8) & empty_board & RANK_MASKS[7]
+            capt1 = (pawn_board << 7) & enemy_board & ~FILE_MASKS[7] & ~RANK_MASKS[7]
+            capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0] & ~RANK_MASKS[7]
 
             while capt1:
                 least_significant_bit = capt1 & -capt1
@@ -1273,12 +1271,6 @@ class MoveGen:
                 capt2 ^= least_significant_bit
                 append(to * 65 - 9)
 
-            while promo_push:
-                least_significant_bit = promo_push & -promo_push
-                to = least_significant_bit.bit_length() - 1
-                promo_push ^= least_significant_bit
-                append(to * 65 - 8)
-
             if en_passant_square:
                 en_passant_square_mask = 1 << en_passant_square
                 en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
@@ -1289,13 +1281,11 @@ class MoveGen:
                     append(from_ | (en_passant_square << 6))
 
         else: 
-            empty_board = (~board_obj.all_board_occupied_squares) & U64
             enemy_board = board_obj.board_occupied_squares[WHITE_INDEX]
             pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
 
-            capt1 = (pawn_board >> 7) & enemy_board & ~FILE_MASKS[0]
-            capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7]
-            promo_push = (pawn_board >> 8) & empty_board & RANK_MASKS[0]
+            capt1 = (pawn_board >> 7) & enemy_board & ~FILE_MASKS[0] & ~RANK_MASKS[0]
+            capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7] & ~RANK_MASKS[0]
 
             while capt1:
                 least_significant_bit = capt1 & -capt1
@@ -1309,12 +1299,6 @@ class MoveGen:
                 capt2 ^= least_significant_bit
                 append(to * 65 + 9)
 
-            while promo_push:
-                least_significant_bit = promo_push & -promo_push
-                to = least_significant_bit.bit_length() - 1
-                promo_push ^= least_significant_bit
-                append(to * 65 + 8)
-
             if en_passant_square:
                 en_passant_square_mask = 1 << en_passant_square
                 en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) << 7) | ((en_passant_square_mask & ~FILE_MASKS[7]) << 9))
@@ -1325,6 +1309,78 @@ class MoveGen:
                     append(from_ | (en_passant_square << 6))
 
         return list_p_captures
+
+
+    def list_all_pawn_promotions(board_obj, color) -> list[int]:
+        """
+        Generate all pawn promotion moves (push and capture promotions) for the specified color.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Piece color (WHITE=1 or BLACK=-1).
+
+        Returns:
+            list: Encoded moves as (from_square | (to_square << 6)).
+        """
+
+        list_p_promotions = []
+        append = list_p_promotions.append
+
+        if color == WHITE:
+            empty_board = (~board_obj.all_board_occupied_squares) & U64
+            enemy_board = board_obj.board_occupied_squares[BLACK_INDEX]
+            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[WHITE_INDEX]
+
+            promo_push = (pawn_board << 8) & empty_board & RANK_MASKS[7]
+            promo_capt1 = (pawn_board << 7) & enemy_board & ~FILE_MASKS[7] & RANK_MASKS[7]
+            promo_capt2 = (pawn_board << 9) & enemy_board & ~FILE_MASKS[0] & RANK_MASKS[7]
+
+            while promo_push:
+                least_significant_bit = promo_push & -promo_push
+                to = least_significant_bit.bit_length() - 1
+                promo_push ^= least_significant_bit
+                append(to * 65 - 8)
+
+            while promo_capt1:
+                least_significant_bit = promo_capt1 & -promo_capt1
+                to = least_significant_bit.bit_length() - 1
+                promo_capt1 ^= least_significant_bit
+                append(to * 65 - 7)
+
+            while promo_capt2:
+                least_significant_bit = promo_capt2 & -promo_capt2
+                to = least_significant_bit.bit_length() - 1
+                promo_capt2 ^= least_significant_bit
+                append(to * 65 - 9)
+
+        else:
+            empty_board = (~board_obj.all_board_occupied_squares) & U64
+            enemy_board = board_obj.board_occupied_squares[WHITE_INDEX]
+            pawn_board = board_obj.pawn & board_obj.board_occupied_squares[BLACK_INDEX]
+
+            promo_push = (pawn_board >> 8) & empty_board & RANK_MASKS[0]
+            promo_capt1 = (pawn_board >> 7) & enemy_board & ~FILE_MASKS[0] & RANK_MASKS[0]
+            promo_capt2 = (pawn_board >> 9) & enemy_board & ~FILE_MASKS[7] & RANK_MASKS[0]
+
+            while promo_push:
+                least_significant_bit = promo_push & -promo_push
+                to = least_significant_bit.bit_length() - 1
+                promo_push ^= least_significant_bit
+                append(to * 65 + 8)
+
+            while promo_capt1:
+                least_significant_bit = promo_capt1 & -promo_capt1
+                to = least_significant_bit.bit_length() - 1
+                promo_capt1 ^= least_significant_bit
+                append(to * 65 + 7)
+
+            while promo_capt2:
+                least_significant_bit = promo_capt2 & -promo_capt2
+                to = least_significant_bit.bit_length() - 1
+                promo_capt2 ^= least_significant_bit
+                append(to * 65 + 9)
+
+        return list_p_promotions
     
 
     def list_all_knight_moves(board_obj, color) -> list[int]:
