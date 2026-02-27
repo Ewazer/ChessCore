@@ -232,7 +232,7 @@ class Board:
             self.en_passant_square = en_passant_square
             self.position_has_loaded = True 
 
-            if self.mailbox:
+            if getattr(self, 'mailbox', None):
                 for square in range(64):
                     piece_type = self.get_piece_type_and_color(square)
                     self.mailbox[square] = piece_type if piece_type else EMPTY
