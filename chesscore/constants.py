@@ -341,8 +341,6 @@ for att in range(1, 7):
     for targ in range(1, 6):
         MVV_LVA[att][targ] = PIECE_VALUES[targ] - att + 10000
 
-del PIECE_VALUES
-
 
 pst = (
     (
@@ -403,4 +401,3 @@ pst = (
         )
      )
 )
-
