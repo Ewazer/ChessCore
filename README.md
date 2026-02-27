@@ -269,7 +269,9 @@ Pseudo-legal and legal move generation. All methods are static.
 | `list_all_castling_move(board_obj, color)` | `→ list[int]` | Castling moves only |
 | `list_all_legal_moves(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
 | `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
-| `list_all_pawn_captures(board_obj, color)` | `→ list[int]` | Pawn capture moves only (captures + en passant, no quiet pushes, including promotions) |
+| `list_all_pawn_captures(board_obj, color)` | `→ list[int]` | Pawn capture moves only (captures + en passant, excludes promotion moves) |
+|
+| `list_all_pawn_promotions(board_obj, color)` | `→ list[int]` | Pawn moves that result in a promotion (push and capture promotions) |
 | `list_all_knight_captures(board_obj, color)` | `→ list[int]` | Knight capture moves only |
 | `list_all_bishop_captures(board_obj, color)` | `→ list[int]` | Bishop capture moves only (magic bitboards) |
 | `list_all_rook_captures(board_obj, color)` | `→ list[int]` | Rook capture moves only (magic bitboards) |
@@ -422,8 +424,8 @@ print(CR_WK)
 | `KNIGHT` | `2` | Knight |
 | `BISHOP` | `3` | Bishop |
 | `ROOK` | `4` | Rook |
-| `KING` | `5` | King |
-| `QUEEN` | `6` | Queen |
+| `QUEEN` | `5` | Queen |
+| `KING` | `6` | King |
 
 > Black pieces are represented by the negative value.
 
