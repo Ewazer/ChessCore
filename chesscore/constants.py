@@ -53,6 +53,7 @@ __all__ = [
     "BISHOP_VALUE",
     "ROOK_VALUE",
     "QUEEN_VALUE",
+    "MVV_LVA",
 ]
 
 
@@ -331,6 +332,18 @@ BISHOP_VALUE = (825, 915)
 ROOK_VALUE = (1276, 1380)
 QUEEN_VALUE = (2538, 2682)
 
+
+MVV_LVA = [[[0] for i in range(6)]for i in range(7)]
+
+PIECE_VALUES = [0, PAWN_VALUE[0], KNIGHT_VALUE[0], BISHOP_VALUE[0], ROOK_VALUE[0], QUEEN_VALUE[0], 3000]
+
+for att in range(1, 7):
+    for targ in range(1, 6):
+        MVV_LVA[att][targ] = PIECE_VALUES[targ] - att + 10000
+
+del PIECE_VALUES
+
+
 pst = (
     (
         (),
@@ -390,3 +403,4 @@ pst = (
         )
      )
 )
+
