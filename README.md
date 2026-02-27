@@ -258,6 +258,8 @@ undo = (move, from_piece, to_piece, castling_rights_prev, halfmove_count, en_pas
 
 Pseudo-legal and legal move generation. All methods are static.
 
+Several functions follow a simple pattern: they return a flat list of all pseudo‑legal moves of a given type.  To avoid repeating the heavy magic‑bitboard lookup when an engine needs separate capture/quiet/promotion lists, a second family of helpers performs the calculation **one time per piece** and fills user‑supplied lists.  These are the `get_..._categorized` methods and the convenience `get_all_moves_categorized` which returns three lists at once.
+
 | Method | Signature | Description |
 |---------|-----------|-------------|
 | `list_all_pawn_moves(board_obj, color)` | `→ list[int]` | All pawn moves (advance, double advance, captures, en passant) |
@@ -270,7 +272,6 @@ Pseudo-legal and legal move generation. All methods are static.
 | `list_all_legal_moves(board_obj, side, castling=True)` | `→ list[int]` | All legal moves (filters moves leaving the king in check) |
 | `generate_all_moves(board_obj, side, castling=True)` | `→ generator` | Legal move generator (yield) |
 | `list_all_pawn_captures(board_obj, color)` | `→ list[int]` | Pawn capture moves only (captures + en passant, excludes promotion moves) |
-|
 | `list_all_pawn_promotions(board_obj, color)` | `→ list[int]` | Pawn moves that result in a promotion (push and capture promotions) |
 | `list_all_knight_captures(board_obj, color)` | `→ list[int]` | Knight capture moves only |
 | `list_all_bishop_captures(board_obj, color)` | `→ list[int]` | Bishop capture moves only (magic bitboards) |
@@ -288,6 +289,13 @@ Pseudo-legal and legal move generation. All methods are static.
 | `list_all_legal_quiets(board_obj, side, castling=True)` | `→ list[int]` | All legal quiet moves (filters moves leaving the king in check) |
 | `generate_all_quiets(board_obj, side, castling=True)` | `→ generator` | Legal quiet move generator (yield) |
 | `list_all_piece_move(board_obj, square, piece_value)` | `→ list[int]` | Moves of a specific piece from a square (only used by `print_highlighted_legal_move` in ChessDisplay) |
+| `get_pawn_moves_categorized(board_obj, color, captures, quiets, promotions)` | `→ None` | Fill three lists with pawn moves; heavy bitboard calc done once. |
+| `get_knight_moves_categorized(board_obj, color, captures, quiets)` | `→ None` | Fill captures/quiets for knights. |
+| `get_bishop_moves_categorized(board_obj, color, captures, quiets)` | `→ None` | Fill captures/quiets for bishops. |
+| `get_rook_moves_categorized(board_obj, color, captures, quiets)` | `→ None` | Fill captures/quiets for rooks. |
+| `get_queen_moves_categorized(board_obj, color, captures, quiets)` | `→ None` | Fill captures/quiets for queens. |
+| `get_king_moves_categorized(board_obj, color, captures, quiets, castling=True)` | `→ None` | Fill captures/quiets for king; castling appended to quiets. |
+| `get_all_moves_categorized(board_obj, color, captures, quiets, promotions, castling=True)` | `→ tuple` | Convenience wrapper that returns the three lists. |
 
 **Common parameters:**
 
@@ -652,6 +660,11 @@ for move in legal_moves:
     from_sq = INVERSE_SQUARES[move & 0x3F]
     to_sq = INVERSE_SQUARES[(move >> 6) & 0x3F]
     print(f"{from_sq} → {to_sq}")
+
+# An alternative fast path: generate categorized lists once
+captures, quiets, promotions = [], [], []
+MoveGen.get_all_moves_categorized(board, WHITE, captures, quiets, promotions)
+print(f"categorized  captures={len(captures)}, quiets={len(quiets)}, promos={len(promotions)}")
 ```
 
 ### Check and Checkmate Detection
