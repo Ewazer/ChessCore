@@ -305,7 +305,7 @@ Game state detection. All methods are static.
 | Method | Signature | Description |
 |---------|-----------|-------------|
 | `attackers_to(board_obj, side, square)` | `→ bool` | Checks if a square is attacked by `side`'s enemy |
-| `get_all_attacker(board_obj, square, occupied=None)` | `→ int` | Returns a bitboard of all attackers on a square (used for SEE or detailed attack lists) |
+| `get_all_attackers(board_obj, square, occupied=None)` | `→ int` | Returns a bitboard of all attackers on a square (used for SEE or detailed attack lists) |
 | `is_checkmate(board_obj, side)` | `→ bool` | Checks if `side` is checkmated |
 | `check_repetition(board_obj)` | `→ bool` | Checks for threefold repetition |
 | `is_move_legal(board_obj, encoded_move)` | `→ bool` | Checks if an encoded move is legal |
@@ -670,7 +670,7 @@ print(GameState.is_checkmate(board, BLACK))  # → True
 print(GameState.attackers_to(board, BLACK, 60))  # → True (black king is attacked)
 
 # detailed attacker bitboard
-attackers_bb = GameState.get_all_attacker(board, 60)
+attackers_bb = GameState.get_all_attackers(board, 60)
 print(f"attackers bitboard: {attackers_bb:064b}")
 ```
 
