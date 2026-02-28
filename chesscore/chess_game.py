@@ -785,7 +785,7 @@ class Board:
         
         self.mailbox[from_] = EMPTY
 
-        if from_piece == PAWN and not promotion_piece and to == en_passant_prev:
+        if from_piece == PAWN and not promotion_piece and en_passant_prev != 0 and to == en_passant_prev:
             self.mailbox[to - 8 if side_to_move == WHITE else to + 8] = EMPTY
         elif from_piece == KING:
             d = to - from_
