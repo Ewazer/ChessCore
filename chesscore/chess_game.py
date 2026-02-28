@@ -406,6 +406,10 @@ class Board:
         INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
         ATT_INDEX = 1 - INDEX
 
+        if not promotion_piece and from_piece == PAWN:
+            if (side_to_move == WHITE and to >= 56) or (side_to_move == BLACK and to <= 7):
+                promotion_piece = QUEEN
+
         en_passant_prev = self.en_passant_square
         castling_rights_prev = self.castling_rights
 
@@ -550,6 +554,10 @@ class Board:
 
         INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
         ATT_INDEX = 1 - INDEX
+
+        if not promotion_piece and from_piece == PAWN:
+            if (side_to_move == WHITE and to >= 56) or (side_to_move == BLACK and to <= 7):
+                promotion_piece = QUEEN
 
         en_passant_prev = self.en_passant_square
         castling_rights_prev = self.castling_rights
