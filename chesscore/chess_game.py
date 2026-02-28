@@ -442,7 +442,6 @@ class Board:
             self.counter_halfmove_without_capture = 0
 
             if promotion_piece:
-                # Promotion: remove pawn, add promoted piece
                 self.pawn &= ~from_bitboard
                 if promotion_piece == QUEEN:
                     self.queen |= to_bitboard
@@ -458,7 +457,7 @@ class Board:
                 if (to - from_) == 16 or (to - from_) == -16: # Note: abs() is slower
                     self.en_passant_square = (from_ + to) // 2
 
-                elif to == en_passant_prev:
+                elif en_passant_prev != 0 and to == en_passant_prev:
                     if side_to_move == WHITE:
                         captured_pawn_square = to - 8
                     else:
@@ -637,7 +636,7 @@ class Board:
                 if (to - from_) == 16 or (to - from_) == -16: # Note abs() is slower than direct comparison
                     self.en_passant_square = (from_ + to) // 2
 
-                elif to == en_passant_prev:
+                elif en_passant_prev != 0 and to == en_passant_prev:
                     if side_to_move == WHITE:
                         captured_pawn_square = to - 8
                     else:
