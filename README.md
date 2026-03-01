@@ -296,6 +296,7 @@ Several functions follow a simple pattern: they return a flat list of all pseudo
 | `get_queen_moves_categorized(board_obj, color, captures, quiets)` | `→ None` | Fill captures/quiets for queens. |
 | `get_king_moves_categorized(board_obj, color, captures, quiets, castling=True)` | `→ None` | Fill captures/quiets for king; castling appended to quiets. |
 | `get_all_moves_categorized(board_obj, color, captures, quiets, promotions, castling=True)` | `→ tuple` | Convenience wrapper that returns the three lists. |
+| `get_captures_and_promotions(board_obj, color, captures, promotions)` | `→ None` | Fill only captures and promotions (no quiet moves). Optimized for quiescence search, skips all quiet move generation entirely. |
 
 **Common parameters:**
 
