@@ -2869,6 +2869,176 @@ class MoveGen:
         return captures_list, quiets_list, promotions_list
 
 
+    @staticmethod
+    def get_captures_and_promotions(board_obj, color, captures_list, promotions_list):
+        """
+        Generate only captures and promotions (no quiet moves).
+        Optimized for quiescence search.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            color (int): Side color (WHITE=1 or BLACK=-1).
+            captures_list (list): List to append capture moves to.
+            promotions_list (list): List to append promotion moves to.
+        """
+
+        all_board_occupied_squares = board_obj.all_board_occupied_squares
+        en_passant_square = board_obj.en_passant_square
+
+        if color == WHITE:
+            own_occ = board_obj.board_occupied_squares[WHITE_INDEX]
+            enemy_occ = board_obj.board_occupied_squares[BLACK_INDEX]
+            pawn = board_obj.pawn & own_occ
+
+            push1 = (pawn << 8) & ~all_board_occupied_squares & U64
+            capt_left = (pawn << 7) & enemy_occ & ~FILE_MASKS[7]
+            capt_right = (pawn << 9) & enemy_occ & ~FILE_MASKS[0]
+
+            promo_mask = RANK_MASKS[7]
+            push1_promo = push1 & promo_mask
+            capt_left_nopromo = capt_left & ~promo_mask
+            capt_left_promo = capt_left & promo_mask
+            capt_right_nopromo = capt_right & ~promo_mask
+            capt_right_promo = capt_right & promo_mask
+
+            while capt_left_nopromo:
+                to = (capt_left_nopromo & -capt_left_nopromo).bit_length() - 1
+                capt_left_nopromo &= capt_left_nopromo - 1
+                captures_list.append((to - 7) | (to << 6))
+
+            while capt_right_nopromo:
+                to = (capt_right_nopromo & -capt_right_nopromo).bit_length() - 1
+                capt_right_nopromo &= capt_right_nopromo - 1
+                captures_list.append((to - 9) | (to << 6))
+
+            while push1_promo:
+                to = (push1_promo & -push1_promo).bit_length() - 1
+                push1_promo &= push1_promo - 1
+                promotions_list.append((to - 8) | (to << 6))
+
+            while capt_left_promo:
+                to = (capt_left_promo & -capt_left_promo).bit_length() - 1
+                capt_left_promo &= capt_left_promo - 1
+                promotions_list.append((to - 7) | (to << 6))
+
+            while capt_right_promo:
+                to = (capt_right_promo & -capt_right_promo).bit_length() - 1
+                capt_right_promo &= capt_right_promo - 1
+                promotions_list.append((to - 9) | (to << 6))
+
+            if en_passant_square:
+                ep_mask = 1 << en_passant_square
+                attackers = pawn & (((ep_mask & ~FILE_MASKS[0]) >> 9) | ((ep_mask & ~FILE_MASKS[7]) >> 7))
+                while attackers:
+                    from_ = (attackers & -attackers).bit_length() - 1
+                    attackers &= attackers - 1
+                    captures_list.append(from_ | (en_passant_square << 6))
+        else:
+            own_occ = board_obj.board_occupied_squares[BLACK_INDEX]
+            enemy_occ = board_obj.board_occupied_squares[WHITE_INDEX]
+            pawn = board_obj.pawn & own_occ
+
+            push1 = (pawn >> 8) & ~all_board_occupied_squares & U64
+            capt_left = (pawn >> 7) & enemy_occ & ~FILE_MASKS[0]
+            capt_right = (pawn >> 9) & enemy_occ & ~FILE_MASKS[7]
+
+            promo_mask = RANK_MASKS[0]
+            push1_promo = push1 & promo_mask
+            capt_left_nopromo = capt_left & ~promo_mask
+            capt_left_promo = capt_left & promo_mask
+            capt_right_nopromo = capt_right & ~promo_mask
+            capt_right_promo = capt_right & promo_mask
+
+            while capt_left_nopromo:
+                to = (capt_left_nopromo & -capt_left_nopromo).bit_length() - 1
+                capt_left_nopromo &= capt_left_nopromo - 1
+                captures_list.append((to + 7) | (to << 6))
+
+            while capt_right_nopromo:
+                to = (capt_right_nopromo & -capt_right_nopromo).bit_length() - 1
+                capt_right_nopromo &= capt_right_nopromo - 1
+                captures_list.append((to + 9) | (to << 6))
+
+            while push1_promo:
+                to = (push1_promo & -push1_promo).bit_length() - 1
+                push1_promo &= push1_promo - 1
+                promotions_list.append((to + 8) | (to << 6))
+
+            while capt_left_promo:
+                to = (capt_left_promo & -capt_left_promo).bit_length() - 1
+                capt_left_promo &= capt_left_promo - 1
+                promotions_list.append((to + 7) | (to << 6))
+
+            while capt_right_promo:
+                to = (capt_right_promo & -capt_right_promo).bit_length() - 1
+                capt_right_promo &= capt_right_promo - 1
+                promotions_list.append((to + 9) | (to << 6))
+
+            if en_passant_square:
+                ep_mask = 1 << en_passant_square
+                attackers = pawn & (((ep_mask & ~FILE_MASKS[0]) << 7) | ((ep_mask & ~FILE_MASKS[7]) << 9))
+                while attackers:
+                    from_ = (attackers & -attackers).bit_length() - 1
+                    attackers &= attackers - 1
+                    captures_list.append(from_ | (en_passant_square << 6))
+
+        knight = board_obj.knight & own_occ
+        while knight:
+            from_ = (knight & -knight).bit_length() - 1
+            knight &= knight - 1
+            capts = KNIGHT_TABLE[from_] & enemy_occ
+            while capts:
+                to = (capts & -capts).bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+        bishop = board_obj.bishop & own_occ
+        while bishop:
+            from_ = (bishop & -bishop).bit_length() - 1
+            bishop &= bishop - 1
+            occ_rel = all_board_occupied_squares & BISHOP_MASK[from_]
+            idx = ((occ_rel * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+            capts = BISHOP_TABLE[from_][idx] & enemy_occ
+            while capts:
+                to = (capts & -capts).bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+        rook = board_obj.rook & own_occ
+        while rook:
+            from_ = (rook & -rook).bit_length() - 1
+            rook &= rook - 1
+            occ_rel = all_board_occupied_squares & ROOK_MASK[from_]
+            idx = ((occ_rel * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+            capts = ROOK_TABLE[from_][idx] & enemy_occ
+            while capts:
+                to = (capts & -capts).bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+        queen = board_obj.queen & own_occ
+        while queen:
+            from_ = (queen & -queen).bit_length() - 1
+            queen &= queen - 1
+            b_occ = all_board_occupied_squares & BISHOP_MASK[from_]
+            b_idx = ((b_occ * BISHOP_MAGIC[from_]) & U64) >> BISHOP_SHIFT[from_]
+            r_occ = all_board_occupied_squares & ROOK_MASK[from_]
+            r_idx = ((r_occ * ROOK_MAGIC[from_]) & U64) >> ROOK_SHIFT[from_]
+            capts = (ROOK_TABLE[from_][r_idx] | BISHOP_TABLE[from_][b_idx]) & enemy_occ
+            while capts:
+                to = (capts & -capts).bit_length() - 1
+                capts &= capts - 1
+                captures_list.append(from_ | (to << 6))
+
+        king = board_obj.king & own_occ
+        from_ = king.bit_length() - 1
+        capts = KING_TABLE[from_] & enemy_occ
+        while capts:
+            to = (capts & -capts).bit_length() - 1
+            capts &= capts - 1
+            captures_list.append(from_ | (to << 6))
+
+
 
 class GameState:
     @staticmethod
