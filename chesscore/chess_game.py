@@ -3235,14 +3235,38 @@ class ChessDisplay:
             board_obj (object): Board object with bitboard attributes.
             side (int, optional): Side color (WHITE=1 or BLACK=-1).
         """
+        board_rendu = [piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(64)]
 
         if side == WHITE:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)] for i in range(8)][::-1]
-        else:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)][::-1] for i in range(8)]
+            board_rendu = (
+                f"   \u200A {BG}                    {END_COLOR}",
+                f"   \u200A \x1b[30m{BG} 8 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(56, 64))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 7 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(48, 56))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 6 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(40, 48))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 5 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(32, 40))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 4 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(24, 32))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 3 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(16, 24))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 2 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(8, 16))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 1 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(0, 8))} {BG} {END_COLOR}",
+                f"   \u200A {BG}   a b c d e f g h  {BG}{END_COLOR}"
+            )
 
-        for row in board_rendu:
-            print(row)
+        else:
+            board_rendu = (
+                f"   \u200A {BG}                    {END_COLOR}",
+                f"   \u200A \x1b[30m{BG} 1 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(7, -1, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 2 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(15, 7, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 3 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(23, 15, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 4 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(31, 23, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 5 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(39, 31, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 6 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(47, 39, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 7 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] for i in range(55, 47, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 8 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] for i in range(63, 55, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG}   h g f e d c b a  {BG}{END_COLOR}"
+            )
+
+        print("\n".join(board_rendu))
+
     
 
     @staticmethod
@@ -3256,10 +3280,10 @@ class ChessDisplay:
             side (int, optional): Side color (WHITE=1 or BLACK=-1).
         """
 
-        print("╔═════════════ GAME START ═════════════╗")
+        print("╔════════ GAME START ════════╗")
 
         print()
-        print("⚪ ═══════════ White play ═══════════ ⚪" if side == WHITE else "⚫ ═══════════ Black play ═══════════ ⚫")
+        print("⚪ ══════ White play ═════ ⚪" if side == WHITE else "⚫ ═════ Black play ══════ ⚫")
         print()
 
         ChessDisplay.print_board(board_obj, side)
@@ -3276,7 +3300,7 @@ class ChessDisplay:
         """
 
         print()
-        print("⚪ ═══════════ White play ═══════════ ⚪" if side == WHITE else "⚫ ═══════════ Black play ═══════════ ⚫")
+        print("⚪ ══════ White play ═════ ⚪" if side == WHITE else "⚫ ═════ Black play ══════ ⚫")
         print()
 
 
@@ -3284,7 +3308,7 @@ class ChessDisplay:
     def print_game_already_over() -> None:
         """Print a message indicating the game is already over."""
 
-        print("🚫 ════════ The game is over ════════ 🚫")
+        print("🚫 ══ The game is over ═══ 🚫")
         return
 
 
@@ -3297,7 +3321,7 @@ class ChessDisplay:
             reason (str, optional): Optional reason for the invalid move.
         """
 
-        print("🚫 ══════════ Invalid move ══════════ 🚫")
+        print("🚫 ════ Invalid move ═════ 🚫")
 
         if reason:
             print(f"Reason: {reason}")
@@ -3315,11 +3339,11 @@ class ChessDisplay:
             side (int, optional): Side color (WHITE=1 or BLACK=-1).
         """
 
-        print("════════════════════════════════════════")
+        print("══════════════════════════════")
         print()
         ChessDisplay.print_board(board_obj, winner if side == None else side)
         print()
-        print(f"╚════════ CHECKMATE {'WHITE' if winner == WHITE else 'BLACK'} WIN ═════════╝")
+        print(f"╚═══ CHECKMATE {'WHITE' if winner == WHITE else 'BLACK'} WIN ═══╝")
 
 
     @staticmethod
@@ -3334,25 +3358,25 @@ class ChessDisplay:
             draw_type (str | None, optional): Draw type ('insufficient_material', 'fifty_move_rule', 'threefold_repetition').
         """   
 
-        print("════════════════════════════════════════")
+        print("══════════════════════════════")
         print()
         ChessDisplay.print_board(board_obj, side)
         print()
 
         if draw_type == 'insufficient_material':
-            print("⏸ ══ Draw by insufficient material ═ ⏸")
+            print("⏸ Draw by insufficient material ⏸")
 
         elif draw_type == 'fifty_move_rule':
-            print("⏸ ═════ Draw by fifty-move rule ════ ⏸")
+            print("⏸ Draw by fifty-move rule ═ ⏸")
 
         elif draw_type == 'threefold_repetition':
-            print("⏸ ═══════ Draw by repetition ═══════ ⏸")
+            print("⏸ ══ Draw by repetition ══ ⏸")
         
         elif draw_type == 'stalemate':
-            print("⏸ ══════ Draw by stalemate ═══════ ⏸")
+            print("⏸ ═══ Draw by stalemate ═══ ⏸")
 
         else:
-            print("⏸ ══════════════ Draw ══════════════ ⏸")
+            print("⏸ ═════════ Draw ═════════ ⏸")
             
 
     @staticmethod
@@ -3377,208 +3401,124 @@ class ChessDisplay:
         print("🚫 ═════════ Invalid format ═════════ 🚫")
         print("Valid move example: ✅--- e2 e4 ---✅")
 
-
-    @staticmethod
-    def print_row_as_list(row) -> None:
-        """
-        Print a board row with empty cells shown as '#'.
-        
-        Args:
-            row (list): Row of piece symbols.
-        """
-
-        import re
-        
-        EMPTY_CHAR = "#"  
-        parts = []
-
-        for cell in row:
-            raw = re.compile(r"\x1b\[[0-9;]*m").sub("", cell)     
-            if raw == " ":
-                cell = cell.replace(" ", EMPTY_CHAR)
-            parts.append(f"'{cell}'")
-
-        print("[" + ", ".join(parts) + "]")
-
-
-    @staticmethod
-    def color_to_code(color) -> tuple:
-        """
-        Convert a color name to ANSI codes.
-
-        Args:
-            color (str): Color name ("red", "green", "yellow", "blue", "magenta", "cyan").
-
-        Returns:
-            tuple: (start_code, end_code) or (None, None) if invalid.
-        """
-
-        if color == "red":
-            return "\033[31m", "\033[0m"
-        elif color == "green": 
-            return "\033[32m", "\033[0m"
-        elif color == "yellow":
-            return "\033[33m", "\033[0m"
-        elif color == "blue":
-            return "\033[34m", "\033[0m"
-        elif color == "magenta":
-            return "\033[35m", "\033[0m"
-        elif color == "cyan":
-            return "\033[36m", "\033[0m"
-        else:
-            return None, None
-
     
     @staticmethod
-    def print_last_move_highlighted(board_obj, color, side = WHITE) -> None:
+    def print_last_move_highlighted(board_obj, side = WHITE) -> None:
         """
         Print the board with the last move highlighted.
 
         Args:
             board_obj (object): Board object representing the board.
-            color (str): Highlight color name.
             side (int, optional): Side color (WHITE=1 or BLACK=-1).
         """
+
+        HIGHLIGHT_WHITE_BG = "\033[48;5;195m"
+        HIGHLIGHT_BLACK_BG = "\033[48;5;109m"
 
         if not board_obj.move_history:
             ChessDisplay.print_board(board_obj, side)
             return
 
-        start_highlight, end_highlight = ChessDisplay.color_to_code(color)
-
-        if start_highlight is None or end_highlight is None:
-            print("⚠️ Invalid color for highlighting.")
-            ChessDisplay.print_board(board_obj, side)
-            return
-
-        if side == WHITE:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)] for i in range(8)][::-1]
-        else:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)][::-1] for i in range(8)]
 
         last_encoded = board_obj.move_history[-1]
         from_sq = last_encoded & 0x3F
         to_sq = (last_encoded >> 6) & 0x3F
 
-        last_move = []
-        for square in (from_sq, to_sq):
-            square_row, square_col = divmod(square, 8)
-            last_move.append((square_row, square_col))
+        board_rendu = [piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(64)]
+        
+        if side == WHITE:
+            board_rendu = (
+                f"   \u200A {BG}                    {END_COLOR}",
+                f"   \u200A \x1b[30m{BG} 8 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(56, 64))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 7 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(48, 56))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 6 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(40, 48))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 5 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(32, 40))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 4 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(24, 32))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 3 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(16, 24))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 2 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(8, 16))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 1 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(0, 8))} {BG} {END_COLOR}",
+                f"   \u200A {BG}   a b c d e f g h  {BG}{END_COLOR}"
+            )
 
-        for coord in last_move:
-            y, x = coord
-            
-            if side == WHITE:
-                row_idx = 7 - y
-                col_idx = x
-            else:
-                row_idx = y
-                col_idx = 7 - x
-                
-            board_rendu[row_idx][col_idx] = f"{start_highlight}{board_rendu[row_idx][col_idx]}{end_highlight}"
-                                                                                    
-        for row in board_rendu:
-            ChessDisplay.print_row_as_list(row)
+        else:
+            board_rendu = (
+                f"   \u200A {BG}                    {END_COLOR}",
+                f"   \u200A \x1b[30m{BG} 1 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(7, -1, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 2 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(15, 7, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 3 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(23, 15, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 4 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(31, 23, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 5 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(39, 31, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 6 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(47, 39, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 7 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(55, 47, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 8 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in (from_sq, to_sq) else f'{HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG}{board_rendu[i]}' for i in range(63, 55, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG}   h g f e d c b a  {BG}{END_COLOR}"
+            )
+
+        print("\n".join(board_rendu))
+
 
 
     @staticmethod
-    def print_highlighted_legal_move(board_obj, color, square, side = WHITE) -> None:
+    def print_highlighted_legal_move(board_obj, square, side = WHITE) -> None:
         """
         Print the board with legal moves for a piece highlighted.
 
         Args:
             board_obj (object): Board object with bitboard attributes.
-            color (str): Highlight color name.
             square (int or str): Square index (0-63) or algebraic like 'e2'.
             side (int, optional): Side color (WHITE=1 or BLACK=-1).
         """
+
+        FROM_HIGHLIGHT_WHITE_BG = "\033[48;5;224m"
+        FROM_HIGHLIGHT_BLACK_BG = "\033[48;5;181m"
+
+        HIGHLIGHT_WHITE_BG = "\033[48;5;195m"
+        HIGHLIGHT_BLACK_BG = "\033[48;5;109m"
         
-        start_highlight, end_highlight = ChessDisplay.color_to_code(color)
+        if isinstance(square, str):
+            square = SQUARES[square]
 
-        if start_highlight is None or end_highlight is None:
-            print("⚠️ Invalid color for highlighting.")
-            ChessDisplay.print_board(board_obj, side)
-            return
+        piece_val = board_obj.get_piece_type_and_color(square)
+        list_move = MoveGen.list_all_piece_move(board_obj, square, piece_val)
 
-        if side == WHITE:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(s)] for s in range(i * 8, (i + 1) * 8)] for i in range(8)][::-1]
-        else:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(s)] for s in range(i * 8, (i + 1) * 8)][::-1] for i in range(8)]
+        highlight_squares = [square]
 
-        if isinstance(square, int):
-            square_idx = square
-        else:
-            try:
-                square_idx = SQUARES[square]
-            except Exception:
-                print("⚠️ Invalid square argument.")
-                ChessDisplay.print_board(board_obj, side)
-                return
-
-        piece_val = board_obj.get_piece_type_and_color(square_idx)
-        list_move = MoveGen.list_all_piece_move(board_obj, square_idx, piece_val)
-        
         for move in list_move:
-            from_square = move & 0x3F
-            to_square = (move >> 6) & 0x3F
-            
-            for sq in (from_square, to_square):
-                square_row, square_col = divmod(sq, 8)
-                
-                if side == WHITE:
-                    render_row, render_col = 7 - square_row, square_col
-                else:
-                    render_row, render_col = square_row, 7 - square_col
+            to_sq = (move >> 6) & 0x3F
+            highlight_squares.append(to_sq)
 
-                if not board_rendu[render_row][render_col].startswith(start_highlight):
-                    board_rendu[render_row][render_col] = f"{start_highlight}{board_rendu[render_row][render_col]}{end_highlight}"
-
-        for row in board_rendu:
-            ChessDisplay.print_row_as_list(row)
-
-
-    @staticmethod
-    def print_highlighted_all_legal_move(board_obj, color, side = WHITE) -> None:
-        """
-        Print the board with all legal moves highlighted.
-
-        Args:
-            board_obj (object): Board object with bitboard attributes.
-            color (str): Highlight color name.
-            side (int, optional): Side color (WHITE=1 or BLACK=-1).
-        """
-
-        start_highlight, end_highlight = ChessDisplay.color_to_code(color)
-
-        if start_highlight is None or end_highlight is None:
-            print("⚠️ Invalid color for highlighting.")
-            ChessDisplay.print_board(board_obj, side)
-            return
-
-        if side == WHITE:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)] for i in range(8)][::-1]
-        else:
-            board_rendu = [[piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(i * 8, (i + 1) * 8)][::-1] for i in range(8)]
-
-        list_move = MoveGen.list_all_legal_moves(board_obj, side)
+        board_rendu = [piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(64)]
         
-        for move in list_move:
-            from_square = move & 0x3F
-            to_square = (move >> 6) & 0x3F
-            
-            for square_idx in (from_square, to_square):
-                square_row, square_col = divmod(square_idx, 8)
-                
-                if side == WHITE:
-                    render_row, render_col = 7 - square_row, square_col
-                else:
-                    render_row, render_col = square_row, 7 - square_col
-                    
-                if not board_rendu[render_row][render_col].startswith(start_highlight):
-                    board_rendu[render_row][render_col] = f"{start_highlight}{board_rendu[render_row][render_col]}{end_highlight}"
+        if side == WHITE:
+            board_rendu = (
+                f"   \u200A {BG}                    {END_COLOR}",
+                f"   \u200A \x1b[30m{BG} 8 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(56, 64))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 7 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(48, 56))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 6 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(40, 48))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 5 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(32, 40))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 4 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(24, 32))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 3 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(16, 24))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 2 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(8, 16))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 1 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(0, 8))} {BG} {END_COLOR}",
+                f"   \u200A {BG}   a b c d e f g h  {BG}{END_COLOR}"
+            )
 
-        for row in board_rendu:
-            ChessDisplay.print_row_as_list(row)
+        else:
+            board_rendu = (
+                f"   \u200A {BG}                    {END_COLOR}",
+                f"   \u200A \x1b[30m{BG} 1 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(7, -1, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 2 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(15, 7, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 3 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(23, 15, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 4 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(31, 23, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 5 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(39, 31, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 6 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(47, 39, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 7 {' '.join((WHITE_BG if i % 2 == 0 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 0 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 0 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(55, 47, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG} 8 {' '.join((WHITE_BG if i % 2 == 1 else BLACK_BG) + board_rendu[i] if i not in highlight_squares else f'{(FROM_HIGHLIGHT_WHITE_BG if i % 2 == 1 else FROM_HIGHLIGHT_BLACK_BG) if i == square else (HIGHLIGHT_WHITE_BG if i % 2 == 1 else HIGHLIGHT_BLACK_BG)}{board_rendu[i]}' for i in range(63, 55, -1))} {BG} {END_COLOR}",
+                f"   \u200A {BG}   h g f e d c b a  {BG}{END_COLOR}"
+            )
+
+        print("\n".join(board_rendu))
+
 
 
 
@@ -3716,7 +3656,7 @@ class ChessCore:
         
 
         ChessDisplay.print_turn(self.board.side_to_move)
-        ChessDisplay.print_board(self.board, self.board.side_to_move)
+        ChessDisplay.print_last_move_highlighted(self.board, self.board.side_to_move)
         
         return 'valid'
     
@@ -3879,4 +3819,4 @@ class ChessCore:
 
 if __name__ == "__main__":
     process = ChessCore()
-    process.play()
+    ChessDisplay.print_highlighted_legal_move(process.board, 'e2', WHITE)
