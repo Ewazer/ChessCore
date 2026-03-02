@@ -5,7 +5,7 @@ except ImportError:
     from constants import *
     from constants import __all__ as _constants_all
 
-__version__ = "3.1.0"
+__version__ = "3.0.7"
 __author__ = "Leroux Lubin"
 
 __all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay", *_constants_all]
@@ -3644,11 +3644,13 @@ class ChessCore:
             return 'illegal'
         
 
-    def move_parser(self, move_str) -> "tuple[int, int]":
+    @staticmethod
+    def move_parser(board_obj, move_str) -> "tuple[int, int]":
         """
         Parse a move string (LAN or SAN) and return encoded move with promotion piece.
 
         Args:
+            board_obj (object): Board object with bitboard attributes.
             move_str (str): Move in LAN (e.g., "e2e4", "e7e8q") or SAN (e.g., "Nf3", "e8=Q").
     
         Returns:
@@ -3661,8 +3663,8 @@ class ChessCore:
         if len(lower) >= 4 and lower[0] in 'abcdefgh' and lower[1].isdigit():
             return ChessCore.lan_to_encoded_move(lower)
         
-        if self.board is not None:
-            result = ChessCore.sen_to_encoded_move(self.board, move_str)
+        if board_obj is not None:
+            result = ChessCore.sen_to_encoded_move(board_obj, move_str)
             return result if isinstance(result, tuple) else (result, 0)
             
         raise ValueError("SAN moves require a board instance for context.")
@@ -3684,7 +3686,7 @@ class ChessCore:
         self.promotion_value = None
 
         try:
-            encoded_move, promotion_piece = self.move_parser(move_str)
+            encoded_move, promotion_piece = ChessCore.move_parser(self.board, move_str)
         except Exception:
             return False
 
