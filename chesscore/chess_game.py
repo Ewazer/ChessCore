@@ -3814,4 +3814,4 @@ class ChessCore:
 
 if __name__ == "__main__":
     process = ChessCore()
-    ChessDisplay.print_highlighted_legal_move(process.board, 'e2', WHITE)
+    process.play()
