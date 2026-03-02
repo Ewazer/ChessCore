@@ -3324,6 +3324,7 @@ class ChessDisplay:
 
     
     @staticmethod
+    @print_disabled
     def print_last_move_highlighted(board_obj, side = WHITE) -> None:
         """
         Print the board with the last move highlighted.
@@ -3378,8 +3379,8 @@ class ChessDisplay:
         print("\n".join(board_rendu))
 
 
-    @print_disabled
     @staticmethod
+    @print_disabled
     def print_highlighted_legal_move(board_obj, square, side = WHITE) -> None:
         """
         Print the board with legal moves for a piece highlighted.
