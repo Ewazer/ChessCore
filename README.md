@@ -203,9 +203,7 @@ Initializes the board in the starting position.
 | `unmake_move(undo, side)` | `undo: tuple, side: int → None` | Undoes a move using the undo tuple |
 | `make_move_search(move, side, promotion_piece)` | `move: int, side: int, promotion_piece: int → tuple` | Like `make_move` but also updates `mg_score`, `eg_score`, `phase` incrementally — optimized for engine search |
 | `unmake_move_search(undo, side)` | `undo: tuple, side: int → None` | Like `unmake_move` but also restores `mg_score`, `eg_score`, `phase` from the undo tuple |
-| `move_parser(move_str)` | `move_str: str → int` | Parses `"e2e4"` into an encoded move |
-| `parse_move_and_validate(all_move)` | `all_move: str → bool` | Parses and validates a move, stores in `encoded_move_in_progress` |
-| `give_move_info()` | `→ None \| str` | Extracts info from the current move. `None` = valid, `str` = invalidity reason |
+
 | `change_side()` | `→ None` | Inverts the turn (`side_to_move *= -1`) |
 | `add_to_history()` | `→ None` | Adds the current move to history and updates the hash |
 | `get_position_hash()` | `→ tuple` | Hash of the current position (for repetition detection) |
@@ -375,11 +373,19 @@ game = ChessCore()
 | `validate_and_apply_move()` | `→ bool` | Validates and applies the current move |
 | `check_loaded_position()` | `→ str \| None` | Checks if a loaded position is checkmate/stalemate |
 | `play(side)` | `side: str → str` | Interactive game loop (console input) |
-| ` force_move(move)` | `move: str → None` | Applies a move **without any legality check** |
+| `force_move(move)` | `move: str → None` | Applies a move **without any legality check** |
 | `commit(move)` | `move: str → str \| None` | Applies a move without check + verifies if game is over |
 | `is_game_over()` | `→ bool \| str` | Queries the game state |
+| `move_parser(move_str)` | `move_str: str → tuple[int, int]` | Parses a LAN or SAN move string → `(encoded_move, promotion_piece)` |
+| `parse_move_and_validate(move_str)` | `move_str: str → bool` | Parses, detects promotion, validates. Sets `board.encoded_move_in_progress` and `promotion_value` |
+| `lan_to_encoded_move(lan_move)` | *(static)* `lan_move: str → tuple[int, int]` | Parses LAN (`"e2e4"`, `"e7e8q"`) → `(encoded_move, promotion_piece)`. Raises `ValueError` on invalid |
+| `lan_to_encoded_move_and_validate(lan_move)` | `lan_move: str → tuple[int, int] \| None` | Parses LAN, sets board state, validates. Returns `None` on failure |
+| `sen_to_encoded_move(board_obj, sen_move, side)` | *(static)* `→ tuple[int, int]` | Converts SAN (e.g., `"Nf3"`, `"O-O"`, `"e8=Q"`) → `(encoded_move, promotion_piece)` |
+| `give_move_info(board_obj, encoded_move)` | *(static)* `→ None \| str` | Validates move source/target coherence. `None` = valid, `str` = reason |
 
-The last 3 methods (` force_move`, `commit`, `is_game_over`) are designed for use by an AI engine.
+The last 3 game methods (`force_move`, `commit`, `is_game_over`) are designed for use by an AI engine.
+
+The parser methods (`move_parser`, `lan_to_encoded_move`, `sen_to_encoded_move`) all return a consistent `(encoded_move, promotion_piece)` tuple, where `promotion_piece` is `0` when no promotion occurs.
 
 #### Return values of `play_move()`
 
@@ -625,7 +631,7 @@ outcome = engine.commit("g8f6")    # → None
 outcome = engine.commit("h5f7")    # → 'checkmate'
 ```
 
-### ` force_move()`
+### `force_move()`
 
 ```python
 from chesscore import ChessCore
@@ -634,8 +640,8 @@ engine = ChessCore()
 engine.start_new_game(side="white", enable_print=False)
 
 # Applies a move without any return
-engine. force_move("e2e4")
-engine. force_move("e7e5")
+engine.force_move("e2e4")
+engine.force_move("e7e5")
 
 # Check game state afterwards
 print(engine.is_game_over())  # → False
