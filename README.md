@@ -375,11 +375,11 @@ game = ChessCore()
 | `validate_and_apply_move()` | `→ bool` | Validates and applies the current move |
 | `check_loaded_position()` | `→ str \| None` | Checks if a loaded position is checkmate/stalemate |
 | `play(side)` | `side: str → str` | Interactive game loop (console input) |
-| `god_mode(move)` | `move: str → None` | Applies a move **without any legality check** |
+| ` force_move(move)` | `move: str → None` | Applies a move **without any legality check** |
 | `commit(move)` | `move: str → str \| None` | Applies a move without check + verifies if game is over |
 | `is_game_over()` | `→ bool \| str` | Queries the game state |
 
-The last 3 methods (`god_mode`, `commit`, `is_game_over`) are designed for use by an AI engine.
+The last 3 methods (` force_move`, `commit`, `is_game_over`) are designed for use by an AI engine.
 
 #### Return values of `play_move()`
 
@@ -625,7 +625,7 @@ outcome = engine.commit("g8 f6")    # → None
 outcome = engine.commit("h5 f7")    # → 'checkmate'
 ```
 
-### `god_mode()`
+### ` force_move()`
 
 ```python
 from chesscore import ChessCore
@@ -634,8 +634,8 @@ engine = ChessCore()
 engine.start_new_game(side="white", enable_print=False)
 
 # Applies a move without any return
-engine.god_mode("e2 e4")
-engine.god_mode("e7 e5")
+engine. force_move("e2 e4")
+engine. force_move("e7 e5")
 
 # Check game state afterwards
 print(engine.is_game_over())  # → False
