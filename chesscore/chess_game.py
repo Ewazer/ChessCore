@@ -1068,14 +1068,16 @@ class Board:
         Parse a move string.
 
         Args:
-            move_str (str): Move string (e.g., "e2 e4").
+            move_str (str): Move string (e.g., "e2e4").
     
         Returns:
             int: Encoded move value.
         """
     
-        all_move = move_str.split(" ")  
-        return SQUARES[all_move[0]] | (SQUARES[all_move[1]] << 6)
+        s = move_str.replace(" ", "").lower()
+        if len(s) < 4:
+            raise ValueError("Invalid move string")
+        return SQUARES[s[0:2]] | (SQUARES[s[2:4]] << 6)
     
     
     def parse_move_and_validate(self, all_move) -> bool:
@@ -1083,48 +1085,21 @@ class Board:
         Parse a move string and validate it.
 
         Args:
-            all_move (str): Move string (e.g., "e2 e4").
+            all_move (str): Move string (e.g., "e2e4").
 
         Returns:
             bool: True if valid, False otherwise.
         """
 
         try:
-            a, b = all_move.split()
-            self.encoded_move_in_progress = SQUARES[a] | (SQUARES[b] << 6)
+            s = all_move.replace(" ", "").lower()
+            if len(s) < 4:
+                return False
+            self.encoded_move_in_progress = SQUARES[s[0:2]] | (SQUARES[s[2:4]] << 6)
             return True
-        
+
         except Exception:
             return False
-
-
-    def give_move_info(self) -> "str | None":
-        """
-        Validate the move in progress and populate move metadata.
-    
-        Returns:
-            None: If the move source/target are coherent (does not guarantee full legality).
-            str: An error message if the move is obviously illegal ('illegal', or a descriptive reason).
-        """
-
-        self.start_coordinate = self.encoded_move_in_progress & 0x3F
-        self.end_coordinate = (self.encoded_move_in_progress >> 6) & 0x3F
-        
-        self.start_value = self.get_piece_type_and_color(self.start_coordinate)         
-        self.end_value = self.get_piece_type_and_color(self.end_coordinate)
-
-        if self.start_value == EMPTY:
-            return 'illegal'
-
-        if self.start_value == 0 or (self.start_value > 0) != (self.side_to_move == WHITE):
-            return "It's not your turn."
-
-        if self.end_value == EMPTY:
-            self.capture_value = EMPTY
-        elif (self.end_value < 0 and self.start_value > 0) or (self.end_value > 0 and self.start_value < 0):
-            self.capture_value = self.end_value
-        else:
-            return 'illegal'
 
 
 
@@ -3379,7 +3354,7 @@ class ChessDisplay:
         Print a chess move.
         
         Args:
-            move (str): Move string (e.g., "e2 e4").
+            move (str): Move string (e.g., "e2e4").
         """
 
         print(f"> {move}")
@@ -3392,7 +3367,7 @@ class ChessDisplay:
         """Print an invalid format message with example."""
 
         print("🚫 ═════════ Invalid format ═════════ 🚫")
-        print("Valid move example: ✅--- e2 e4 ---✅")
+        print("Valid move example: ✅--- e2e4 ---✅")
 
     
     @staticmethod
