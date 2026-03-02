@@ -59,12 +59,41 @@ class Board:
 
 
     def init_board_for_engine(self) -> None:
-        """Initialize the board for engine use, including setting up the mailbox and evaluation scores."""
+        """Initialize the board for engine use, including setting up the mailbox and evaluation scores.
+        
+        Builds the mailbox from the current bitboard state, so it works
+        correctly after ``load_board()`` as well as from the default
+        starting position.
+        """
 
         self.mg_score = 0
         self.eg_score = 0
         self.phase = 0
-        self.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 8 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
+
+        mailbox = [EMPTY] * 64
+        occ = self.all_board_occupied_squares
+        black_occ = self.board_occupied_squares[BLACK_INDEX]
+        bb_pawn = self.pawn
+        bb_knight = self.knight
+        bb_bishop = self.bishop
+        bb_rook = self.rook
+        bb_queen = self.queen
+        bb_king = self.king
+        for sq in range(64):
+            mask = 1 << sq
+            if not (occ & mask):
+                continue
+            if bb_pawn & mask: p = PAWN
+            elif bb_knight & mask: p = KNIGHT
+            elif bb_bishop & mask: p = BISHOP
+            elif bb_rook & mask: p = ROOK
+            elif bb_queen & mask: p = QUEEN
+            elif bb_king & mask: p = KING
+            else: continue
+            if black_occ & mask:
+                p = -p
+            mailbox[sq] = p
+        self.mailbox = mailbox
 
 
     def load_board(self, fen) -> None:
@@ -601,12 +630,16 @@ class Board:
                 self.pawn &= ~from_bitboard
                 if promotion_piece == QUEEN:
                     self.queen |= to_bitboard
+                    self.phase += 4
                 elif promotion_piece == ROOK:
                     self.rook |= to_bitboard
+                    self.phase += 2
                 elif promotion_piece == BISHOP:
                     self.bishop |= to_bitboard
+                    self.phase += 1
                 elif promotion_piece == KNIGHT:
                     self.knight |= to_bitboard
+                    self.phase += 1
                 
                 if side_to_move == WHITE:
                     self.mg_score -= pst[PAWN][MG_INDEX][from_]
@@ -3345,7 +3378,7 @@ class ChessDisplay:
         print("\n".join(board_rendu))
 
 
-
+    @print_disabled
     @staticmethod
     def print_highlighted_legal_move(board_obj, square, side = WHITE) -> None:
         """
@@ -3415,7 +3448,7 @@ class ChessCore:
         self.party_over = False
     
 
-    def start_new_game(self, side="white", enable_print = True) -> None:
+    def start_new_game(self, side="white", enable_print=None) -> None:
         """
         Start a new chess game.
 
@@ -3423,13 +3456,14 @@ class ChessCore:
             side (str, optional): Starting side ('white' or 'black'). Defaults to 'white'.
             enable_print (bool, optional): Whether to enable printing. Defaults to True.
         """
-        
+
         if side == "black":
             self.board.change_side()
 
-        ChessDisplay.enable_print = enable_print
+        if enable_print is not None:
+            ChessDisplay.enable_print = enable_print
 
-        if enable_print:
+        if ChessDisplay.enable_print:
             ChessDisplay.print_game_start(self.board, self.board.side_to_move)
     
 
@@ -3933,7 +3967,7 @@ class ChessCore:
             return f"Invalid SAN move: {str(e)}"
 
 
-    def play(self, side="white") -> str:
+    def play(self, side="white", enable_print=None) -> str:
         """
         Run an interactive chess game loop.
         
@@ -3944,10 +3978,13 @@ class ChessCore:
             str: 'checkmate' or 'draw' when game ends.
         """
 
-        self.start_new_game(side=side)
+        self.start_new_game(side=side, enable_print=enable_print)
         
         while True:
-            all_move = input("> ")
+            if ChessDisplay.enable_print:
+                all_move = input("> ")
+            else:
+                all_move = input()
             result = self.play_move(all_move, print_move=False)
             if result == 'checkmate':
                 return 'checkmate' 
