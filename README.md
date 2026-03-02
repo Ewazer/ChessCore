@@ -332,21 +332,18 @@ Terminal display with Unicode symbols and ANSI codes. Contains a `@print_disable
 | Method | Description |
 |---------|-------------|
 | `print_board(board_obj, side=WHITE)` | Prints the board (oriented according to side) |
-| `print_game_start(board_obj, side)` | Game start message + board |
+| `print_game_start(board_obj, side=WHITE)` | Game start message + board |
 | `print_turn(side)` | Indicates whose turn it is |
-| `print_game_over(board_obj, winner, side)` | Checkmate message |
-| `print_draw(board_obj, side, draw_type)` | Draw message (`insufficient_material`, `fifty_move_rule`, `threefold_repetition`) |
-| `print_invalid_move(reason)` | Invalid move message |
-| `print_invalid_format()` | Invalid format message |
+| `print_game_already_over()` | Message indicating the game is already over |
+| `print_game_over(board_obj, winner, side=None)` | Checkmate message |
+| `print_draw(board_obj, side=WHITE, draw_type=None)` | Draw message (`insufficient_material`, `fifty_move_rule`, `threefold_repetition`, `stalemate`) |
+| `print_invalid_move(reason=None)` | Invalid move message (with optional reason) |
+| `print_invalid_format()` | Invalid format message with example |
 | `print_move(move)` | Prints the played move |
-| `print_last_move_highlighted(board_obj, color, side)` | Board with last move highlighted |
-| `print_highlighted_legal_move(board_obj, color, square, side)` | Board with legal moves of a piece highlighted |
-| `print_highlighted_all_legal_move(board_obj, color, side)` | Board with all legal moves highlighted |
-| `color_to_code(color)` | Converts a color name to ANSI codes |
+| `print_last_move_highlighted(board_obj, side=WHITE)` | Board with last move highlighted |
+| `print_highlighted_legal_move(board_obj, square, side=WHITE)` | Board with legal moves of a piece highlighted (`square` can be an index or algebraic string like `'e2'`) |
 
-**Available colors for highlighting:** `"red"`, `"green"`, `"yellow"`, `"blue"`, `"magenta"`, `"cyan"`
-
-Note: Methods returning an error message (`print_invalid_move`, `print_invalid_format`) are not disabled by the `@print_disabled` decorator.
+Note: `print_invalid_move` and `print_game_already_over` are **not** affected by `@print_disabled` — they always print. All other display methods are silenced when `ChessDisplay.enable_print = False`.
 
 ---
 
