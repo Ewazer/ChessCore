@@ -376,7 +376,7 @@ game = ChessCore()
 | `force_move(move)` | `move: str → None` | Applies a move **without any legality check** |
 | `commit(move)` | `move: str → str \| None` | Applies a move without check + verifies if game is over |
 | `is_game_over()` | `→ bool \| str` | Queries the game state |
-| `move_parser(move_str)` | `move_str: str → tuple[int, int]` | Parses a LAN or SAN move string → `(encoded_move, promotion_piece)` |
+| `move_parser(board_obj, move_str)` | *(static)* `→ tuple[int, int]` | Parses a LAN or SAN move string → `(encoded_move, promotion_piece)` |
 | `parse_move_and_validate(move_str)` | `move_str: str → bool` | Parses, detects promotion, validates. Sets `board.encoded_move_in_progress` and `promotion_value` |
 | `lan_to_encoded_move(lan_move)` | *(static)* `lan_move: str → tuple[int, int]` | Parses LAN (`"e2e4"`, `"e7e8q"`) → `(encoded_move, promotion_piece)`. Raises `ValueError` on invalid |
 | `lan_to_encoded_move_and_validate(lan_move)` | `lan_move: str → tuple[int, int] \| None` | Parses LAN, sets board state, validates. Returns `None` on failure |
