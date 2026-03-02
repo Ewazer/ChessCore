@@ -74,6 +74,9 @@ class Board:
 
         Args:
             fen (str): FEN string representing the board state.
+
+        Raises:
+            ValueError: If the FEN string is invalid.
         """
         
         fen_dict = {
@@ -96,8 +99,7 @@ class Board:
             position = fen[0].split("/")
 
             if len(position) != 8:
-                print("\033[31mFEN string is invalid (board position).\033[0m")
-                return
+                raise ValueError("FEN string is invalid (board position).")
             
             else:
                 pawn = 0
@@ -111,9 +113,8 @@ class Board:
                 for i in range(8):
                     file = 0
 
-                    if type(position[i]) != str:
-                        print("\033[31mFEN string is invalid (board position).\033[0m")
-                        return
+                    if not isinstance(position[i], str):
+                        raise ValueError("FEN string is invalid (board position).")
                     
                     for c in position[i]:
                         if c.isdigit():
@@ -160,19 +161,16 @@ class Board:
                                 board_occupied_squares[1] |= piece_bit
 
                         if file > 8:
-                            print("\033[31mFEN string is invalid (board position).\033[0m")
-                            return
+                            raise ValueError("FEN string is invalid (board position).")
                         
                     if file != 8:
-                        print("\033[31mFEN string is invalid (board position).\033[0m")
-                        return
+                        raise ValueError("FEN string is invalid (board position).")
 
             if fen[1] in ("w", "b"): 
                 side = WHITE if fen[1] == "w" else BLACK
 
             else:
-                print("\033[31mFEN string is invalid (side to move).\033[0m")
-                return
+                raise ValueError("FEN string is invalid (side to move).")
             
             if fen[2] == "-":
                 castling_rights = 0
@@ -189,8 +187,7 @@ class Board:
                     castling_rights |= CR_BQ
 
             else:
-                print("\033[31mFEN string is invalid (castling rights).\033[0m")
-                return
+                raise ValueError("FEN string is invalid (castling rights).")
 
             if fen[3] == "-":
                 en_passant_square = 0
@@ -199,18 +196,15 @@ class Board:
                 rank_idx = int(fen[3][1]) - 1
                 en_passant_square = rank_idx * 8 + file_idx
             else:
-                print("\033[31mFEN string is invalid (en passant square).\033[0m")
-                return
+                raise ValueError("FEN string is invalid (en passant square).")
 
             if fen[4].isdigit():
                 if int(fen[4]) >= 0:
                     counter_halfmove_without_capture = int(fen[4])
                 else:
-                    print("\033[31mFEN string is invalid.\033[0m")
-                    return 
+                    raise ValueError("FEN string is invalid (halfmove clock).")
             else:
-                    print("\033[31mFEN string is invalid.\033[0m")
-                    return 
+                raise ValueError("FEN string is invalid (halfmove clock).")
 
             self.pawn = pawn
             self.knight = knight
@@ -237,9 +231,7 @@ class Board:
                     piece_type = self.get_piece_type_and_color(square)
                     self.mailbox[square] = piece_type if piece_type else EMPTY
         else:
-            print("\033[31mFEN string is invalid.\033[0m")
-
-        return 
+            raise ValueError("FEN string is invalid (expected 6 fields).")
     
     
     def add_to_history(self) -> None:
@@ -532,7 +524,7 @@ class Board:
         game phase and the middlegame/endgame evaluation scores.
 
         Before calling this function, the variables: mailbox, phase, eg_score and mg score must be defined.
-            Ex: board_obj.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 7 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
+            Ex: board_obj.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 8 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
 
         Args:
             move (int): Encoded move value.
@@ -913,7 +905,7 @@ class Board:
         game phase and the middlegame/endgame evaluation scores.
 
         Before calling this function, the variables: mailbox, phase, eg_score and mg score must be defined.
-            Ex: board_obj.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 7 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
+            Ex: board_obj.mailbox = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK] + [PAWN] * 8 + [EMPTY] * 32 + [-PAWN] * 8 + [-ROOK, -KNIGHT, -BISHOP, -QUEEN, -KING, -BISHOP, -KNIGHT, -ROOK]
 
         Args:
             undo (tuple): Undo information for the move.
@@ -1106,12 +1098,13 @@ class Board:
             return False
 
 
-    def give_move_info(self) -> "None | str":
+    def give_move_info(self) -> "str | None":
         """
-        Extract move information.
+        Validate the move in progress and populate move metadata.
     
         Returns:
-            None or str: None if the move is valid, or str if the move is invalid.
+            None: If the move source/target are coherent (does not guarantee full legality).
+            str: An error message if the move is obviously illegal ('illegal', or a descriptive reason).
         """
 
         self.start_coordinate = self.encoded_move_in_progress & 0x3F
@@ -3735,12 +3728,15 @@ class ChessCore:
                 return 'draw'
 
     
-    def god_mode(self, move) -> None:
+    def force_move(self, move) -> None:
         """
-        Apply a move without any checks (for testing or AI purposes).
+        Apply a move without legality checks (for engine or testing use).
 
         Args:
             move (str): Move string (e.g., "e2 e4", or "e7 e8q" for promotion).
+
+        Raises:
+            ValueError: If the move string format is invalid.
         """
 
         promotion_piece = 0
@@ -3750,8 +3746,7 @@ class ChessCore:
             move = move[:-1]
 
         if not self.board.parse_move_and_validate(move):
-            print("Invalid move format for commit.")
-            return
+            raise ValueError(f"Invalid move format: {move!r}")
         
         if not promotion_piece:
             from_sq = self.board.encoded_move_in_progress & 0x3F
@@ -3805,7 +3800,7 @@ class ChessCore:
             str or None: 'checkmate', 'draw' if game ends, or None if game continues.
         """
 
-        self.god_mode(move)
+        self.force_move(move)
         
         outcome = self.is_game_over()
 
