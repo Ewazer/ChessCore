@@ -55,6 +55,11 @@ __all__ = [
     "QUEEN_VALUE",
     "PIECE_VALUES",
     "MVV_LVA",
+    "WHITE_BG",
+    "BLACK_BG",
+    "BG",
+    "END_COLOR",
+    "PIECE_COLOR"
 ]
 
 
@@ -77,19 +82,26 @@ WHITE_INDEX = 0
 BLACK_INDEX = 1
 
 
+WHITE_BG  = "\033[107m"
+BLACK_BG  = "\033[48;5;250m"
+BG  = "\x1b[100m"
+END_COLOR = "\x1b[0m"
+
+PIECE_COLOR = "\033[38;5;236m"
+
 piece_note_style = {
-    PAWN: "♙",   
-    ROOK: "♖",   
-    KNIGHT: "♘",  
-    BISHOP: "♗",   
-    QUEEN: "♕",  
-    KING: "♔", 
-    -PAWN: "♟",
-    -ROOK: "♜",  
-    -KNIGHT: "♞", 
-    -BISHOP: "♝",  
-    -QUEEN: "♛", 
-    -KING: "♚",
+    PAWN: f"{PIECE_COLOR}♙",   
+    ROOK: f"{PIECE_COLOR}♖",   
+    KNIGHT: f"{PIECE_COLOR}♘",  
+    BISHOP: f"{PIECE_COLOR}♗",   
+    QUEEN: f"{PIECE_COLOR}♕",  
+    KING: f"{PIECE_COLOR}♔", 
+    -PAWN: f"{PIECE_COLOR}♟",
+    -ROOK: f"{PIECE_COLOR}♜",  
+    -KNIGHT: f"{PIECE_COLOR}♞", 
+    -BISHOP: f"{PIECE_COLOR}♝",  
+    -QUEEN: f"{PIECE_COLOR}♛", 
+    -KING: f"{PIECE_COLOR}♚",
     EMPTY: " "    
 }
 
