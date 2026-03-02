@@ -13,9 +13,8 @@ __all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay", *_const
 class Board:
     __slots__ = (
         'pawn', 'knight', 'bishop', 'rook', 'queen', 'king','board_occupied_squares', 'all_board_occupied_squares', 'king_square',
-        'move_history', 'side_to_move', 'counter_halfmove_without_capture','castling_rights', 'position_has_loaded', 'en_passant_square',
-        'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','start_coordinate', 'end_coordinate', 'start_value', 
-        'end_value', 'capture_value','mg_score', 'eg_score', 'phase', 'mailbox'
+        'move_history', 'side_to_move', 'counter_halfmove_without_capture','castling_rights', 'position_has_loaded', 'en_passant_square','start_value',
+        'last_position_hash', 'position_hash_history', 'encoded_move_in_progress','mg_score', 'eg_score', 'phase', 'mailbox','end_coordinate'
     )
 
     def __init__(self):
@@ -308,7 +307,7 @@ class Board:
             int | None: The piece type (PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING) if a piece is present on the square, otherwise None.
         """
 
-        mask = SQUARE_MASK[square]
+        mask = SQUARE_MASKS[square]
 
         if not self.all_board_occupied_squares & mask:
             return None 
@@ -366,7 +365,7 @@ class Board:
 
         piece_type = self.get_piece_type(square)
         if piece_type:
-            mask = SQUARE_MASK[square]
+            mask = SQUARE_MASKS[square]
             color = bool(self.board_occupied_squares[WHITE_INDEX] & mask)
             return piece_type if color else -piece_type
         else:
@@ -1023,85 +1022,6 @@ class Board:
         self.en_passant_square = en_passant_prev
 
 
-    @staticmethod
-    def bitboard_to_fen(bitboard) -> str:
-        """
-        Convert a bitboard representation to FEN?
-
-        Args:
-            bitboard (int): A 64-bit integer representing the bitboard position,
-
-        Returns:
-            str: A FEN rank string representation of the bitboard.
-        """
-
-
-        bitboard_str = f"{bitboard:064b}"
-        r = []
-
-        for i in range(8):
-            r_b = bitboard_str[i*8:(i+1)*8][::-1]
-            
-            fen_rank = ""
-            empty = 0
-
-            for bit in r_b:
-                if bit == "1":
-                    if empty:
-                        fen_rank += str(empty)
-                        empty = 0
-                    fen_rank += "p"
-                else:
-                    empty += 1
-
-            if empty:
-                fen_rank += str(empty)
-
-            r.append(fen_rank)
-
-        return "/".join(r)
-        
-
-    @staticmethod
-    def move_parser(move_str) -> int:
-        """
-        Parse a move string.
-
-        Args:
-            move_str (str): Move string (e.g., "e2e4").
-    
-        Returns:
-            int: Encoded move value.
-        """
-    
-        s = move_str.replace(" ", "").lower()
-        if len(s) < 4:
-            raise ValueError("Invalid move string")
-        return SQUARES[s[0:2]] | (SQUARES[s[2:4]] << 6)
-    
-    
-    def parse_move_and_validate(self, all_move) -> bool:
-        """
-        Parse a move string and validate it.
-
-        Args:
-            all_move (str): Move string (e.g., "e2e4").
-
-        Returns:
-            bool: True if valid, False otherwise.
-        """
-
-        try:
-            s = all_move.replace(" ", "").lower()
-            if len(s) < 4:
-                return False
-            self.encoded_move_in_progress = SQUARES[s[0:2]] | (SQUARES[s[2:4]] << 6)
-            return True
-
-        except Exception:
-            return False
-
-
 
 class MoveGen:    
     @staticmethod  
@@ -1159,8 +1079,8 @@ class MoveGen:
                 append(to * 65 - 9)
 
             if en_passant_square:
-                en_passant_square_mask = 1 << en_passant_square
-                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
+                en_passant_SQUARE_MASKS = 1 << en_passant_square
+                en_passant_square_attackers = pawn_board & (((en_passant_SQUARE_MASKS & ~FILE_MASKS[0]) >> 9) | ((en_passant_SQUARE_MASKS & ~FILE_MASKS[7]) >> 7))
                 while en_passant_square_attackers:
                     least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
                     from_ = least_significant_bit.bit_length() - 1
@@ -1203,8 +1123,8 @@ class MoveGen:
                 append(to * 65 + 9)
 
             if en_passant_square:
-                en_passant_square_mask = 1 << en_passant_square
-                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) << 7) | ((en_passant_square_mask & ~FILE_MASKS[7]) << 9))
+                en_passant_SQUARE_MASKS = 1 << en_passant_square
+                en_passant_square_attackers = pawn_board & (((en_passant_SQUARE_MASKS & ~FILE_MASKS[0]) << 7) | ((en_passant_SQUARE_MASKS & ~FILE_MASKS[7]) << 9))
                 while en_passant_square_attackers:
                     least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
                     from_ = least_significant_bit.bit_length() - 1
@@ -1249,8 +1169,8 @@ class MoveGen:
                 append(to * 65 - 9)
 
             if en_passant_square:
-                en_passant_square_mask = 1 << en_passant_square
-                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) >> 9) | ((en_passant_square_mask & ~FILE_MASKS[7]) >> 7))
+                en_passant_SQUARE_MASKS = 1 << en_passant_square
+                en_passant_square_attackers = pawn_board & (((en_passant_SQUARE_MASKS & ~FILE_MASKS[0]) >> 9) | ((en_passant_SQUARE_MASKS & ~FILE_MASKS[7]) >> 7))
                 while en_passant_square_attackers:
                     least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
                     from_ = least_significant_bit.bit_length() - 1
@@ -1277,8 +1197,8 @@ class MoveGen:
                 append(to * 65 + 9)
 
             if en_passant_square:
-                en_passant_square_mask = 1 << en_passant_square
-                en_passant_square_attackers = pawn_board & (((en_passant_square_mask & ~FILE_MASKS[0]) << 7) | ((en_passant_square_mask & ~FILE_MASKS[7]) << 9))
+                en_passant_SQUARE_MASKS = 1 << en_passant_square
+                en_passant_square_attackers = pawn_board & (((en_passant_SQUARE_MASKS & ~FILE_MASKS[0]) << 7) | ((en_passant_SQUARE_MASKS & ~FILE_MASKS[7]) << 9))
                 while en_passant_square_attackers:
                     least_significant_bit = en_passant_square_attackers & -en_passant_square_attackers
                     from_ = least_significant_bit.bit_length() - 1
@@ -3146,7 +3066,7 @@ class GameState:
 
         side = board_obj.side_to_move
         from_sq = encoded_move & 0x3F
-        mask = SQUARE_MASK[from_sq]
+        mask = SQUARE_MASKS[from_sq]
 
         if board_obj.pawn & mask:
             pseudo_moves = MoveGen.list_all_pawn_moves(board_obj, side)
@@ -3489,7 +3409,6 @@ class ChessDisplay:
 
 
 
-
 class ChessCore:
     def __init__(self):
         self.board = Board()
@@ -3551,35 +3470,10 @@ class ChessCore:
         if print_move:
             ChessDisplay.print_move(all_move)
 
-        self.promotion_value = None
-
-        if len(all_move) == 6:
-            if all_move[-1] in ('q','r','b','n'):
-                self.promotion_value = {'q':QUEEN,'r':ROOK,'b':BISHOP,'n':KNIGHT}[all_move[-1]]
-
-                if not self.board.parse_move_and_validate(all_move[:-1]):
-                    ChessDisplay.print_invalid_format()
-                    self.promotion_value = None
-                    return 'illegal'
-                
-            else:
-                ChessDisplay.print_invalid_format()
-                return 'illegal'
-        
-        elif not self.board.parse_move_and_validate(all_move):
+        if not self.parse_move_and_validate(all_move):
             ChessDisplay.print_invalid_format()
             return 'illegal'
 
-        self.info_move = self.board.give_move_info()
-
-        if self.info_move:
-            if self.info_move != "illegal":
-                ChessDisplay.print_invalid_move(self.info_move)
-                return 'illegal'
-            else:
-                ChessDisplay.print_invalid_move("Illegal move coordinates.")
-                return 'illegal'
-        
         else:
             if self.board.position_has_loaded:
                 if not self.board.move_history:
@@ -3678,6 +3572,363 @@ class ChessCore:
         self.board.change_side()
 
         return True
+    
+
+    @staticmethod
+    def bitboard_to_fen(bitboard) -> str:
+        """
+        Convert a bitboard representation to FEN?
+
+        Args:
+            bitboard (int): A 64-bit integer representing the bitboard position,
+
+        Returns:
+            str: A FEN rank string representation of the bitboard.
+        """
+
+
+        bitboard_str = f"{bitboard:064b}"
+        r = []
+
+        for i in range(8):
+            r_b = bitboard_str[i*8:(i+1)*8][::-1]
+            
+            fen_rank = ""
+            empty = 0
+
+            for bit in r_b:
+                if bit == "1":
+                    if empty:
+                        fen_rank += str(empty)
+                        empty = 0
+                    fen_rank += "p"
+                else:
+                    empty += 1
+
+            if empty:
+                fen_rank += str(empty)
+
+            r.append(fen_rank)
+
+        return "/".join(r)
+
+
+
+    @staticmethod
+    def give_move_info(board_obj, encoded_move) -> "str | None":
+        """
+        Validate the move in progress and populate move metadata.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            encoded_move (int): Encoded move value.
+
+        Returns:
+            None: If the move source/target are coherent (does not guarantee full legality).
+            str: An error message if the move is obviously illegal ('illegal', or a descriptive reason).
+        """
+
+        start_coordinate = encoded_move & 0x3F
+        board_obj.end_coordinate = (encoded_move >> 6) & 0x3F
+        
+        board_obj.start_value = board_obj.get_piece_type_and_color(start_coordinate)         
+        end_value = board_obj.get_piece_type_and_color(board_obj.end_coordinate)
+
+        if board_obj.start_value == EMPTY:
+            return 'illegal'
+
+        if board_obj.start_value == 0 or (board_obj.start_value > 0) != (board_obj.side_to_move == WHITE):
+            return "It's not your turn."
+
+        if end_value != EMPTY and not (end_value < 0 and board_obj.start_value > 0) and not (end_value > 0 and board_obj.start_value < 0):
+            return 'illegal'
+        
+
+    def move_parser(self, move_str) -> "tuple[int, int]":
+        """
+        Parse a move string (LAN or SAN) and return encoded move with promotion piece.
+
+        Args:
+            move_str (str): Move in LAN (e.g., "e2e4", "e7e8q") or SAN (e.g., "Nf3", "e8=Q").
+    
+        Returns:
+            tuple[int, int]: (encoded_move, promotion_piece) where promotion_piece is 0 if none.
+        """
+    
+        move_str = move_str.replace(" ", "")
+        
+        lower = move_str.lower()
+        if len(lower) >= 4 and lower[0] in 'abcdefgh' and lower[1].isdigit():
+            return ChessCore.lan_to_encoded_move(lower)
+        
+        if self.board is not None:
+            result = ChessCore.sen_to_encoded_move(self.board, move_str)
+            return result if isinstance(result, tuple) else (result, 0)
+            
+        raise ValueError("SAN moves require a board instance for context.")
+
+
+    
+    def parse_move_and_validate(self, move_str) -> bool:
+        """
+        Parse a move string, detect promotion, and validate it.
+        Sets self.board.encoded_move_in_progress and self.promotion_value on success.
+
+        Args:
+            move_str (str): Move string in LAN (e.g., "e2e4", "e7e8q") or SAN (e.g., "Nf3").
+
+        Returns:
+            bool: True if the move is structurally valid, False otherwise.
+        """
+
+        self.promotion_value = None
+
+        try:
+            encoded_move, promotion_piece = self.move_parser(move_str)
+        except Exception:
+            return False
+
+        self.board.encoded_move_in_progress = encoded_move
+        if promotion_piece:
+            self.promotion_value = promotion_piece
+
+        info = ChessCore.give_move_info(self.board, encoded_move)
+        return info is None
+
+
+    @staticmethod
+    def lan_to_encoded_move(lan_move) -> "tuple[int, int]":
+        """
+        Parse a LAN move string into an encoded move and promotion piece.
+
+        Args:
+            lan_move (str): Move string in LAN format (e.g., "e2e4", "e7e8q").
+    
+        Returns:
+            tuple[int, int]: (encoded_move, promotion_piece) where promotion_piece is 0 if none.
+
+        Raises:
+            ValueError: If the move string is invalid.
+        """
+    
+        s = lan_move.replace(" ", "").lower()
+        promotion_piece = 0
+
+        if len(s) == 5:
+            if s[4] in ('q', 'r', 'b', 'n'):
+                promotion_piece = {'q': QUEEN, 'r': ROOK, 'b': BISHOP, 'n': KNIGHT}[s[4]]
+                s = s[:4]
+            else:
+                raise ValueError(f"Invalid promotion piece: {s[4]!r}")
+        elif len(s) < 4:
+            raise ValueError("Invalid move string")
+
+        return SQUARES[s[0:2]] | (SQUARES[s[2:4]] << 6), promotion_piece
+    
+
+    def lan_to_encoded_move_and_validate(self, lan_move) -> "tuple[int, int] | None":
+        """
+        Parse a LAN move string, set board state, and validate it.
+        Sets self.board.encoded_move_in_progress and self.promotion_value on success.
+
+        Args:
+            lan_move (str): Move string in LAN format (e.g., "e2e4", "e7e8q").
+
+        Returns:
+            tuple[int, int] | None: (encoded_move, promotion_piece) if valid, None otherwise.
+        """
+
+        try:
+            encoded_move, promotion_piece = ChessCore.lan_to_encoded_move(lan_move)
+        except Exception:
+            return None
+
+        self.board.encoded_move_in_progress = encoded_move
+        self.promotion_value = promotion_piece if promotion_piece else None
+
+        info = ChessCore.give_move_info(self.board, encoded_move)
+        if info is not None:
+            return None
+
+        return encoded_move, promotion_piece
+
+
+    @staticmethod
+    def sen_to_encoded_move(board_obj, sen_move, side=None) -> int:
+        """
+        Convert a move in Standard Algebraic Notation (SAN) to an encoded move format.
+
+        Args:
+            sen_move (str): Move in SAN format (e.g., "e4", "Nf3", "e8=Q").
+            side (int, optional): Side color (WHITE=1 or BLACK=-1). If None, uses the current side to move (default).
+        
+        Returns:
+            int: Encoded move as an integer.
+        """
+        
+        capture = False
+        piece_type = PAWN
+        promotion_piece = 0
+
+        if side is None:
+            side = board_obj.side_to_move
+
+        if sen_move in ["O-O", "O-O-O"]:
+            if side == WHITE:
+                if sen_move == "O-O":
+                    return SQUARES["e1"] | (SQUARES["g1"] << 6)
+                else:
+                    return SQUARES["e1"] | (SQUARES["c1"] << 6)
+            else:
+                if sen_move == "O-O":
+                    return SQUARES["e8"] | (SQUARES["g8"] << 6)
+                else:
+                    return SQUARES["e8"] | (SQUARES["c8"] << 6)
+                
+        if not sen_move[-1].isdigit():       
+            if sen_move[-1] in ('Q', 'R', 'B', 'N') and '=' in sen_move:
+                promotion_piece = {'Q': QUEEN, 'R': ROOK, 'B': BISHOP, 'N': KNIGHT}[sen_move[-1]]
+                sen_move = sen_move[:-2]
+            
+            elif sen_move[-1] in ('q', 'r', 'b', 'n') and '=' in sen_move:
+                promotion_piece = {'q': QUEEN, 'r': ROOK, 'b': BISHOP, 'n': KNIGHT}[sen_move[-1]]
+                sen_move = sen_move[:-2]
+
+            elif sen_move[-1] in ('+', '#'):
+                sen_move = sen_move[:-1]
+
+            else:
+                raise ValueError("Invalid SAN move: unrecognized promotion or check/mate symbol.")
+
+
+        to_square = SQUARES[sen_move[-2:]] 
+
+        if 'x' in sen_move:
+            sen_move = sen_move.replace('x', '')
+            capture = True
+
+        if sen_move[0] in ('K', 'Q', 'R', 'B', 'N'):
+            piece_type = {'K': KING, 'Q': QUEEN, 'R': ROOK, 'B': BISHOP, 'N': KNIGHT}[sen_move[0]]
+            sen_move = sen_move[1:]
+
+        if sen_move[:-2] in 'abcdefgh':
+            column = sen_move[:-2]
+
+        if piece_type == KING:
+            if side == WHITE:
+                from_square = (KING_TABLE[to_square] & board_obj.king & board_obj.board_occupied_squares[WHITE_INDEX]).bit_length() - 1
+            else:
+                from_square = (KING_TABLE[to_square] & board_obj.king & board_obj.board_occupied_squares[BLACK_INDEX]).bit_length() - 1
+
+            return from_square | (to_square << 6)
+        
+        elif piece_type == ROOK:
+            occ_rel = ROOK_MASK[to_square] & board_obj.all_board_occupied_squares
+            idx = ((occ_rel * ROOK_MAGIC[to_square]) & U64) >> ROOK_SHIFT[to_square]
+
+            own_occ = board_obj.board_occupied_squares[WHITE_INDEX if side == WHITE else BLACK_INDEX]
+            candidates = ROOK_TABLE[to_square][idx] & board_obj.rook & own_occ
+
+            if column and candidates & ~FILE_MASKS[FILE_INDEXES[column]]:
+                candidates &= FILE_MASKS[FILE_INDEXES[column]]
+            from_square = candidates.bit_length() - 1
+
+        elif piece_type == BISHOP:
+            occ_rel = BISHOP_MASK[to_square] & board_obj.all_board_occupied_squares
+            idx = ((occ_rel * BISHOP_MAGIC[to_square]) & U64) >> BISHOP_SHIFT[to_square]
+
+            own_occ = board_obj.board_occupied_squares[WHITE_INDEX if side == WHITE else BLACK_INDEX]
+            candidates = BISHOP_TABLE[to_square][idx] & board_obj.bishop & own_occ
+
+            if column and candidates & ~FILE_MASKS[FILE_INDEXES[column]]:
+                candidates &= FILE_MASKS[FILE_INDEXES[column]]
+            from_square = candidates.bit_length() - 1
+
+        elif piece_type == QUEEN:
+            occ_rel_rook = ROOK_MASK[to_square] & board_obj.all_board_occupied_squares
+            occ_rel_bishop = BISHOP_MASK[to_square] & board_obj.all_board_occupied_squares
+
+            idx_rook = ((occ_rel_rook * ROOK_MAGIC[to_square]) & U64) >> ROOK_SHIFT[to_square]
+            idx_bishop = ((occ_rel_bishop * BISHOP_MAGIC[to_square]) & U64) >> BISHOP_SHIFT[to_square]
+
+            own_occ = board_obj.board_occupied_squares[WHITE_INDEX if side == WHITE else BLACK_INDEX]
+            candidates = (ROOK_TABLE[to_square][idx_rook] | BISHOP_TABLE[to_square][idx_bishop]) & board_obj.queen & own_occ
+
+            if column and candidates & ~FILE_MASKS[FILE_INDEXES[column]]:
+                candidates &= FILE_MASKS[FILE_INDEXES[column]]
+            from_square = candidates.bit_length() - 1
+
+        elif piece_type == KNIGHT:
+            own_occ = board_obj.board_occupied_squares[WHITE_INDEX if side == WHITE else BLACK_INDEX]
+            candidates = KNIGHT_TABLE[to_square] & board_obj.knight & own_occ
+
+            if column and candidates & ~FILE_MASKS[FILE_INDEXES[column]]:
+                candidates &= FILE_MASKS[FILE_INDEXES[column]]
+            from_square = candidates.bit_length() - 1
+
+        elif piece_type == PAWN:
+            if not capture:
+                if side == WHITE:
+                    if board_obj.get_piece_type_and_color(to_square - 8) == PAWN:
+                        from_square = to_square - 8
+                    elif board_obj.get_piece_type_and_color(to_square - 16) == PAWN:
+                        from_square = to_square - 16
+                else:
+                    if board_obj.get_piece_type_and_color(to_square + 8) == -PAWN:
+                        from_square = to_square + 8
+                    elif board_obj.get_piece_type_and_color(to_square + 16) == -PAWN:
+                        from_square = to_square + 16
+            else:
+                possible_from_squares = []
+                if side == WHITE:
+                    if board_obj.get_piece_type_and_color(to_square - 7) == PAWN and (to_square + 1) % 8 != 0:
+                        possible_from_squares.append(to_square - 7)
+                    if board_obj.get_piece_type_and_color(to_square - 9) == PAWN and (to_square % 8) != 0:
+                        possible_from_squares.append(to_square - 9)
+                else:
+                    if board_obj.get_piece_type_and_color(to_square + 7) == -PAWN and (to_square + 1) % 8 != 0:
+                        possible_from_squares.append(to_square + 7)
+                    if board_obj.get_piece_type_and_color(to_square + 9) == -PAWN and (to_square % 8) != 0:
+                        possible_from_squares.append(to_square + 9)
+
+                if len(possible_from_squares) == 1:
+                    from_square = possible_from_squares[0]
+                elif column:
+                    for sq in possible_from_squares:
+                        if sq // 8 == FILE_INDEXES[column]:
+                            from_square = sq
+                            break
+                else:
+                    from_square = -1
+
+        if from_square == -1:
+            raise ValueError("Invalid SAN move.")
+
+        return from_square | (to_square << 6), promotion_piece
+    
+
+    def san_to_encoded_move_and_validate(board_obj, san_move, side=None) -> "int | str":
+        """
+        Convert a move in Standard Algebraic Notation (SAN) to an encoded move format and validate it.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            san_move (str): Move in SAN format (e.g., "e4", "Nf3", "e8=Q").
+            side (int, optional): Side color (WHITE=1 or BLACK=-1). If None, uses the current side to move (default).
+        """
+
+        try:
+            encoded_move = board_obj.sen_to_encoded_move(san_move, side)
+            board_obj.encoded_move_in_progress = encoded_move
+            validation_result = ChessCore.give_move_info()
+        
+            if validation_result is not None:
+                return validation_result
+        
+            return encoded_move
+        
+        except Exception as e:
+            return f"Invalid SAN move: {str(e)}"
 
 
     def play(self, side="white") -> str:
@@ -3716,13 +3967,11 @@ class ChessCore:
 
         promotion_piece = 0
 
-        if len(move) == 6 and move[-1] in ('q','r','b','n'):
-            promotion_piece = {'q':QUEEN,'r':ROOK,'b':BISHOP,'n':KNIGHT}[move[-1]]
-            move = move[:-1]
-
-        if not self.board.parse_move_and_validate(move):
+        if not self.parse_move_and_validate(move):
             raise ValueError(f"Invalid move format: {move!r}")
         
+        promotion_piece = self.promotion_value or 0
+
         if not promotion_piece:
             from_sq = self.board.encoded_move_in_progress & 0x3F
             to_sq = (self.board.encoded_move_in_progress >> 6) & 0x3F
