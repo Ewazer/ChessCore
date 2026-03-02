@@ -14,7 +14,7 @@ __all__ = [
     "piece_note_style",
     "SQUARES",
     "INVERSE_SQUARES",
-    "SQUARE_MASK",
+    "SQUARE_MASKS",
     "U64",
     "ROOK_MASK",
     "ROOK_MAGIC",
@@ -44,6 +44,12 @@ __all__ = [
     "CR_WQ",
     "CR_BK",
     "CR_BQ",
+    "WHITE_BG",
+    "BLACK_BG",
+    "BG",
+    "END_COLOR",
+    "PIECE_COLOR",
+    "FILE_INDEXES",
     #for engine
     "MG_INDEX",
     "EG_INDEX",
@@ -55,11 +61,6 @@ __all__ = [
     "QUEEN_VALUE",
     "PIECE_VALUES",
     "MVV_LVA",
-    "WHITE_BG",
-    "BLACK_BG",
-    "BG",
-    "END_COLOR",
-    "PIECE_COLOR"
 ]
 
 
@@ -117,10 +118,14 @@ SQUARES = {
     "a8": 56, "b8": 57, "c8": 58, "d8": 59, "e8": 60, "f8": 61, "g8": 62, "h8": 63
 }
 
+FILE_INDEXES = {
+    "a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7,
+}
+
 INVERSE_SQUARES = {v: k for k, v in SQUARES.items()}
 
 
-SQUARE_MASK = [1 << square for square in range(64)]
+SQUARE_MASKS = [1 << square for square in range(64)]
 
 
 U64 = (1 << 64) - 1
