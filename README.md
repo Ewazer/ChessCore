@@ -1,6 +1,6 @@
 # ChessCore
 
-> **Version 3.0.6** by Leroux Lubin
+> **Version 3.0.7** by Leroux Lubin
 
 ChessCore is an optimized chess core, written entirely in **native Python** (no external dependencies required).
 
