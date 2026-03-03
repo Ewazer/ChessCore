@@ -61,6 +61,12 @@ __all__ = [
     "QUEEN_VALUE",
     "PIECE_VALUES",
     "MVV_LVA",
+    "MATE_SCORE",
+    "PAWN_PASSED_MG",
+    "PAWN_PASSED_EG",
+    "MASK_AHEAD_RANK",
+    "MASK_BEHIND_RANK",
+    "MASK_EDGE",
 ]
 
 
