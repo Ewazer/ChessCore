@@ -350,8 +350,10 @@ class Board:
             return ROOK
         elif self.queen & mask:
             return QUEEN
-        else:
+        elif self.king & mask:
             return KING
+        else:
+            return None
         
 
     def get_piece_type_with_mask(self, mask) -> "int | None":
@@ -377,8 +379,10 @@ class Board:
             return ROOK
         elif self.queen & mask:
             return QUEEN
-        else:
+        elif self.king & mask:
             return KING
+        else:
+            return None
             
         
     def get_piece_type_and_color(self, square) -> int:
