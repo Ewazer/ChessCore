@@ -419,3 +419,15 @@ pst = (
         )
      )
 )
+
+
+MATE_SCORE = 99999
+
+PAWN_PASSED_MG = (0, 5, 10, 20, 40, 70, 120, 0)
+PAWN_PASSED_EG = (0, 10, 20, 40, 80, 140, 220, 0)
+
+# Precompute masks, for each file, of the squares in front (towards the opponent's side) of each square. 
+MASK_AHEAD_RANK = tuple(0xFFFFFFFFFFFFFFFF & ~((1 << (8 * (r + 1))) - 1) if r < 7 else 0 for r in range(8))
+MASK_BEHIND_RANK = tuple((1 << (8 * r)) - 1 if r > 0 else 0 for r in range(8))
+
+MASK_EDGE = 0xFF818181818181FF 
