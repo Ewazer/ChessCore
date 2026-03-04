@@ -64,8 +64,6 @@ __all__ = [
     "MATE_SCORE",
     "MASK_PAWN_PASSED_MG",
     "MASK_PAWN_PASSED_EG",
-    "MASK_AHEAD_RANK",
-    "MASK_BEHIND_RANK",
     "MASK_EDGE",
 ]
 
@@ -434,9 +432,5 @@ PAWN_PASSED_EG = (0, 28, 33, 41, 72, 170, 260, 0)
 
 MASK_PAWN_PASSED_MG = tuple(PAWN_PASSED_MG[square >> 3] for square in range(64))
 MASK_PAWN_PASSED_EG = tuple(PAWN_PASSED_EG[square >> 3] for square in range(64))
-
-# Precompute masks, for each file, of the squares in front (towards the opponent's side) of each square. 
-MASK_AHEAD_RANK = tuple(0xFFFFFFFFFFFFFFFF & ~((1 << (8 * (r + 1))) - 1) if r < 7 else 0 for r in range(8))
-MASK_BEHIND_RANK = tuple((1 << (8 * r)) - 1 if r > 0 else 0 for r in range(8))
 
 MASK_EDGE = 0xFF818181818181FF 
