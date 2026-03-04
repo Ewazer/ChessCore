@@ -65,6 +65,8 @@ __all__ = [
     "MASK_PAWN_PASSED_MG",
     "MASK_PAWN_PASSED_EG",
     "MASK_EDGE",
+    "KNIGHT_MOBILITY_MG",
+    "KNIGHT_MOBILITY_EG",
 ]
 
 
@@ -434,3 +436,6 @@ MASK_PAWN_PASSED_MG = tuple(PAWN_PASSED_MG[square >> 3] for square in range(64))
 MASK_PAWN_PASSED_EG = tuple(PAWN_PASSED_EG[square >> 3] for square in range(64))
 
 MASK_EDGE = 0xFF818181818181FF 
+
+KNIGHT_MOBILITY_MG = (-20, -10, -2, 3, 7, 9, 12, 14, 15)
+KNIGHT_MOBILITY_EG = (-28, -15, -4, 3, 9, 11, 13, 16, 17)
