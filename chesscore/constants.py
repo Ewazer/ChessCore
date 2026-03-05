@@ -44,6 +44,7 @@ __all__ = [
     "CR_WQ",
     "CR_BK",
     "CR_BQ",
+    "CASTLING_UPDATE",
     "WHITE_BG",
     "BLACK_BG",
     "BG",
@@ -190,6 +191,15 @@ CR_WK = 1
 CR_WQ = 2
 CR_BK = 4
 CR_BQ = 8
+
+
+CASTLING_UPDATE = [15] * 64
+CASTLING_UPDATE[0]  = 15 & ~CR_WQ
+CASTLING_UPDATE[4]  = 15 & ~(CR_WK | CR_WQ)
+CASTLING_UPDATE[7]  = 15 & ~CR_WK
+CASTLING_UPDATE[56] = 15 & ~CR_BQ
+CASTLING_UPDATE[60] = 15 & ~(CR_BK | CR_BQ)
+CASTLING_UPDATE[63] = 15 & ~CR_BK
 
 
 #For engine
