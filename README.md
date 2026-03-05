@@ -382,10 +382,16 @@ game = ChessCore()
 | `lan_to_encoded_move_and_validate(lan_move)` | `lan_move: str → tuple[int, int] \| None` | Parses LAN, sets board state, validates. Returns `None` on failure |
 | `san_to_encoded_move(board_obj, san_move, side)` | *(static)* `→ tuple[int, int]` | Converts SAN (e.g., `"Nf3"`, `"O-O"`, `"e8=Q"`) → `(encoded_move, promotion_piece)` |
 | `give_move_info(board_obj, encoded_move)` | *(static)* `→ None \| str` | Validates move source/target coherence. `None` = valid, `str` = reason |
+| `encode_move_to_lan(encoded_move, promotion_piece)` | *(static)* `encoded_move: int, promotion_piece: int → str` | Converts an encoded move back to LAN format (e.g., `"e2e4"`, `"e7e8q"`) |
+| `encode_move_to_san(board_obj, encoded_move, promotion_piece, state_indicator)` | *(static)* `→ str` | Converts an encoded move back to SAN format with full notation (disambiguation, captures, promotions, check/mate symbols) |
 
 The last 3 game methods (`force_move`, `commit`, `is_game_over`) are designed for use by an AI engine.
 
 The parser methods (`move_parser`, `lan_to_encoded_move`, `san_to_encoded_move`) all return a consistent `(encoded_move, promotion_piece)` tuple, where `promotion_piece` is `0` when no promotion occurs.
+
+The encoder methods (`encode_move_to_lan`, `encode_move_to_san`) convert encoded moves back to human-readable formats:
+- `encode_move_to_lan()`: Simple format useful for logging/export
+- `encode_move_to_san()`: Full Standard Algebraic Notation with automatic disambiguation for pieces that can move to the same square, and optional check/checkmate indicators when `state_indicator` is True
 
 #### Return values of `play_move()`
 
@@ -711,6 +717,45 @@ for move in MoveGen.generate_all_moves(board, WHITE):
 ### Make / Unmake Search (incremental evaluation)
 
 `make_move_search` / `unmake_move_search` maintain `mg_score`, `eg_score`, and `phase` incrementally, no need to recompute the full evaluation at each node. Must be initialized before use (e.g., by computing scores from scratch once at the root).
+
+### Convert Encoded Moves to Text Format (LAN & SAN)
+
+```python
+from chesscore import ChessCore, MoveGen, Board
+from chesscore.constants import *
+
+game = ChessCore()
+game.start_new_game(side="white", enable_print=False)
+
+game.play_move("e2e4", print_move=False)
+game.play_move("e7e5", print_move=False)
+game.play_move("g1f3")
+
+board = game.board
+moves = MoveGen.list_all_legal_moves(board, WHITE)
+
+for move in moves[:5]:
+    lan_format = ChessCore.encode_move_to_lan(move, promotion_piece=0)
+    san_format = ChessCore.encode_move_to_san(board, move, promotion_piece=0, state_indicator=True)
+    
+    print(f"LAN: {lan_format:6} → SAN: {san_format}")
+    # Output example:
+    # LAN: a2a3   → SAN: a3
+    # LAN: a2a4   → SAN: a4
+    # LAN: b1a3   → SAN: Na3
+    # LAN: b1c3   → SAN: Nc3
+    # LAN: b2b3   → SAN: b3
+```
+
+**Notes:**
+- `encode_move_to_lan()` returns the simple format: `[from][to][promotion]` (e.g., `"e2e4"`, `"e7e8q"`)
+- `encode_move_to_san()` returns full Standard Algebraic Notation with:
+  - Piece letter (K, Q, R, B, N) or nothing for pawn moves
+  - Disambiguation (e.g., `Nbd2` if both knights can move to d2)
+  - Capture indicator (`x`) if capturing
+  - Target square (e.g., `f3`)
+  - Promotion character (e.g., `=Q`)
+  - Optional check (`+`) or checkmate (`#`) indicator when `state_indicator` is True
 
 ### Mailbox and `init_board_for_engine`
 
