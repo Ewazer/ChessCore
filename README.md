@@ -836,7 +836,7 @@ for move in moves:
 
 ## Benchmarks
 
-Measured with CPython 3.11 on Windows — all timings in **µs/op**.  
+Measured with CPython 3.11 on Windows, all timings in **µs/op**.  
 Comparison against [python-chess 1.11.2](https://python-chess.readthedocs.io/).
 
 ### ChessCore vs python-chess
