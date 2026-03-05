@@ -295,6 +295,53 @@ Several functions follow a simple pattern: they return a flat list of all pseudo
 | `get_king_moves_categorized(board_obj, color, captures, quiets, castling=True)` | `→ None` | Fill captures/quiets for king; castling appended to quiets. |
 | `get_all_moves_categorized(board_obj, color, captures, quiets, promotions, castling=True)` | `→ tuple` | Convenience wrapper that returns the three lists. |
 | `get_captures_and_promotions(board_obj, color, captures, promotions)` | `→ None` | Fill only captures and promotions (no quiet moves). Optimized for quiescence search, skips all quiet move generation entirely. |
+| `get_pinned_pieces(board_obj, king_square, INDEX, ENEMY_INDEX)` | `→ int` | Returns a bitboard of absolutely pinned pieces (pieces whose removal would expose the king to a sliding-piece attack). Used internally by the legal‑move functions to skip expensive `attackers_to` calls for non‑pinned, non‑king, non‑en‑passant moves. |
+
+#### Pin-based legality optimization
+
+`get_pinned_pieces` is the key to avoiding a make/`attackers_to`/unmake cycle for most moves.
+
+When the king is **not** in check, a move is guaranteed legal if:
+- The moving piece is **not** pinned (its `from` square has no bit set in the pinned bitboard), **and**
+- It is **not** a king move (king must always be checked), **and**
+- It is **not** an **en passant** capture (both pawns leave the same rank, possibly uncovering a rook/queen).
+
+The three legal‑move family functions (`list_all_legal_moves`, `list_all_legal_captures`, `list_all_legal_quiets`) all follow this pattern:
+
+```python
+pinned = MoveGen.get_pinned_pieces(board_obj, king_squares[INDEX], INDEX, ENEMY_INDEX)
+
+# Sliding pieces (bishop/rook/queen): only verify if pinned
+for move in MoveGen.list_all_bishop_moves(board_obj, side):
+    if SQUARE_MASKS[move & 0x3F] & pinned:
+        undo = make(move, side)
+        if not attackers_to(board_obj, side, king_squares[INDEX]):
+            append(move)
+        unmake(undo, side)
+    else:
+        append(move)   # guaranteed legal — no make/unmake needed
+
+# Knights: a pinned knight can never remain along the pin ray → skip it entirely
+for move in MoveGen.list_all_knight_moves(board_obj, side):
+    if not (SQUARE_MASKS[move & 0x3F] & pinned):
+        append(move)
+```
+
+You can also call `get_pinned_pieces` directly inside your own engine to skip the legality check for non-pinned pieces:
+
+```python
+from chesscore import MoveGen, WHITE_INDEX, BLACK_INDEX
+
+INDEX = WHITE_INDEX   # White's turn
+ENEMY_INDEX = BLACK_INDEX
+king_sq = board.king_square[INDEX]
+
+pinned = MoveGen.get_pinned_pieces(board, king_sq, INDEX, ENEMY_INDEX)
+
+if not (pinned & (1 << from_square)):
+    # piece is not pinned: move is legal without further verification
+    ...
+```
 
 **Common parameters:**
 
