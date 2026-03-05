@@ -423,6 +423,7 @@ class Board:
 
         from_bitboard = 1 << from_
         to_bitboard = 1 << to
+        move_mask = from_bitboard | to_bitboard
 
         from_piece = self.get_piece_type_with_mask(from_bitboard)
         to_piece = self.get_piece_type_with_mask(to_bitboard)
@@ -435,9 +436,8 @@ class Board:
                 promotion_piece = QUEEN
 
         en_passant_prev = self.en_passant_square
-        castling_rights_prev = self.castling_rights
 
-        undo = (move, from_piece, to_piece, castling_rights_prev, self.counter_halfmove_without_capture, en_passant_prev, promotion_piece)
+        undo = (move, from_piece, to_piece, self.castling_rights, self.counter_halfmove_without_capture, en_passant_prev, promotion_piece)
 
         self.en_passant_square = 0
 
@@ -450,19 +450,11 @@ class Board:
                 self.knight &= ~to_bitboard
             elif to_piece == ROOK:
                 self.rook &= ~to_bitboard
-                if to == 7: 
-                    self.castling_rights &= ~CR_WK
-                if to == 0: 
-                    self.castling_rights &= ~CR_WQ
-                if to == 63: 
-                    self.castling_rights &= ~CR_BK
-                if to == 56: 
-                    self.castling_rights &= ~CR_BQ
             else:
-                self.queen &= ~to_bitboard   
+                self.queen &= ~to_bitboard
 
             self.counter_halfmove_without_capture = 0
-            self.board_occupied_squares[ATT_INDEX] &= ~to_bitboard   
+            self.board_occupied_squares[ATT_INDEX] &= ~to_bitboard
         else:
             self.counter_halfmove_without_capture += 1
 
@@ -480,71 +472,49 @@ class Board:
                 elif promotion_piece == KNIGHT:
                     self.knight |= to_bitboard
             else:
-                self.pawn = (self.pawn & ~from_bitboard) | to_bitboard
+                self.pawn ^= move_mask
 
-                if (to - from_) == 16 or (to - from_) == -16: # Note: abs() is slower
-                    self.en_passant_square = (from_ + to) // 2
+                diff = to - from_
+                if diff == 16 or diff == -16:
+                    self.en_passant_square = (from_ + to) >> 1
 
                 elif en_passant_prev != 0 and to == en_passant_prev:
-                    if side_to_move == WHITE:
-                        captured_pawn_square = to - 8
-                    else:
-                        captured_pawn_square = to + 8
-
+                    captured_pawn_square = to - 8 if side_to_move == WHITE else to + 8
                     captured_pawn_bitboard = 1 << captured_pawn_square
                     self.pawn &= ~captured_pawn_bitboard
                     self.board_occupied_squares[ATT_INDEX] &= ~captured_pawn_bitboard
 
         elif from_piece == BISHOP:
-            self.bishop = (self.bishop & ~from_bitboard) | to_bitboard
+            self.bishop ^= move_mask
 
         elif from_piece == KNIGHT:
-            self.knight = (self.knight & ~from_bitboard) | to_bitboard
+            self.knight ^= move_mask
 
         elif from_piece == ROOK:
-            self.rook = (self.rook & ~from_bitboard) | to_bitboard
-            if from_ == 7: 
-                self.castling_rights &= ~CR_WK
-            if from_ == 0: 
-                self.castling_rights &= ~CR_WQ
-            if from_ == 63: 
-                self.castling_rights &= ~CR_BK
-            if from_ == 56: 
-                self.castling_rights &= ~CR_BQ
+            self.rook ^= move_mask
 
         elif from_piece == QUEEN:
-            self.queen = (self.queen & ~from_bitboard) | to_bitboard
+            self.queen ^= move_mask
 
-        else:
-            self.king = (self.king & ~from_bitboard) | to_bitboard
-
+        else:  # KING
+            self.king ^= move_mask
             self.king_square[INDEX] = to
 
-            if side_to_move == WHITE:
-                self.castling_rights &= ~CR_WK
-                self.castling_rights &= ~CR_WQ
-            else:
-                self.castling_rights &= ~CR_BK
-                self.castling_rights &= ~CR_BQ
-
-        if from_piece == KING:
             d = to - from_
-            if d == 2:  
-                rook_from_mask = 1 << (7 if side_to_move == WHITE else 63)
-                rook_to_mask = 1 << (5 if side_to_move == WHITE else 61)
+            if d == 2:
+                rook_move_mask = (1 << (7 if side_to_move == WHITE else 63)) | (1 << (5 if side_to_move == WHITE else 61))
+                self.rook ^= rook_move_mask
+                self.board_occupied_squares[INDEX] ^= rook_move_mask
 
-                self.rook = (self.rook & ~rook_from_mask) | rook_to_mask
-                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_from_mask) | rook_to_mask
+            elif d == -2:
+                rook_move_mask = (1 << (0 if side_to_move == WHITE else 56)) | (1 << (3 if side_to_move == WHITE else 59))
+                self.rook ^= rook_move_mask
+                self.board_occupied_squares[INDEX] ^= rook_move_mask
 
-            elif d == -2:  
-                rook_from_mask = 1 << (0 if side_to_move == WHITE else 56)
-                rook_to_mask = 1 << (3 if side_to_move == WHITE else 59)
-                
-                self.rook = (self.rook & ~rook_from_mask) | rook_to_mask
-                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_from_mask) | rook_to_mask
-
-        self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~from_bitboard) | to_bitboard
+        self.board_occupied_squares[INDEX] ^= move_mask
         self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
+
+        self.castling_rights &= CASTLING_UPDATE[from_] & CASTLING_UPDATE[to]
 
         return undo
     
@@ -572,21 +542,27 @@ class Board:
 
         from_bitboard = 1 << from_
         to_bitboard = 1 << to
+        move_mask = from_bitboard | to_bitboard
 
-        from_piece = abs(self.mailbox[from_])
-        to_piece = abs(self.mailbox[to])
+        mailbox = self.mailbox
+        from_piece = abs(mailbox[from_])
+        to_piece = abs(mailbox[to])
 
         INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
         ATT_INDEX = 1 - INDEX
+
+        _flip = 0 if side_to_move == WHITE else 56
+        _eflip = _flip ^ 56
 
         if not promotion_piece and from_piece == PAWN:
             if (side_to_move == WHITE and to >= 56) or (side_to_move == BLACK and to <= 7):
                 promotion_piece = QUEEN
 
         en_passant_prev = self.en_passant_square
-        castling_rights_prev = self.castling_rights
+        mg = self.mg_score
+        eg = self.eg_score
 
-        undo = (move, from_piece, to_piece, castling_rights_prev, self.counter_halfmove_without_capture, en_passant_prev, promotion_piece, self.mg_score, self.eg_score, self.phase)
+        undo = (move, from_piece, to_piece, self.castling_rights, self.counter_halfmove_without_capture, en_passant_prev, promotion_piece, mg, eg, self.phase)
 
         self.en_passant_square = 0
 
@@ -602,14 +578,6 @@ class Board:
             elif to_piece == ROOK:
                 self.rook &= ~to_bitboard
                 self.phase -= 2
-                if to == 7: 
-                    self.castling_rights &= ~CR_WK
-                if to == 0: 
-                    self.castling_rights &= ~CR_WQ
-                if to == 63: 
-                    self.castling_rights &= ~CR_BK
-                if to == 56: 
-                    self.castling_rights &= ~CR_BQ
             else:
                 self.queen &= ~to_bitboard   
                 self.phase -= 4
@@ -617,12 +585,9 @@ class Board:
             self.counter_halfmove_without_capture = 0
             self.board_occupied_squares[ATT_INDEX] &= ~to_bitboard
 
-            if side_to_move == WHITE:
-                self.mg_score += pst[to_piece][MG_INDEX][to ^ 56]
-                self.eg_score += pst[to_piece][EG_INDEX][to ^ 56]
-            else:
-                self.mg_score -= pst[to_piece][MG_INDEX][to]
-                self.eg_score -= pst[to_piece][EG_INDEX][to]
+            cap_pst = pst[to_piece]
+            mg += side_to_move * cap_pst[MG_INDEX][to ^ _eflip]
+            eg += side_to_move * cap_pst[EG_INDEX][to ^ _eflip]
 
         else:
             self.counter_halfmove_without_capture += 1
@@ -644,193 +609,114 @@ class Board:
                 elif promotion_piece == KNIGHT:
                     self.knight |= to_bitboard
                     self.phase += 1
-                
-                if side_to_move == WHITE:
-                    self.mg_score -= pst[PAWN][MG_INDEX][from_]
-                    self.eg_score -= pst[PAWN][EG_INDEX][from_]
-                    self.mg_score += pst[promotion_piece][MG_INDEX][to]
-                    self.eg_score += pst[promotion_piece][EG_INDEX][to]
-                else:
-                    self.mg_score += pst[PAWN][MG_INDEX][from_ ^ 56]
-                    self.eg_score += pst[PAWN][EG_INDEX][from_ ^ 56]
-                    self.mg_score -= pst[promotion_piece][MG_INDEX][to ^ 56]
-                    self.eg_score -= pst[promotion_piece][EG_INDEX][to ^ 56]
+
+                pawn_pst = pst[PAWN]
+                promo_pst = pst[promotion_piece]
+                mg += side_to_move * (promo_pst[MG_INDEX][to ^ _flip] - pawn_pst[MG_INDEX][from_ ^ _flip])
+                eg += side_to_move * (promo_pst[EG_INDEX][to ^ _flip] - pawn_pst[EG_INDEX][from_ ^ _flip])
             else:
-                self.pawn = (self.pawn & ~from_bitboard) | to_bitboard
+                self.pawn ^= move_mask
 
-                if side_to_move == WHITE:
-                    self.mg_score -= pst[PAWN][MG_INDEX][from_]
-                    self.eg_score -= pst[PAWN][EG_INDEX][from_]
-                    self.mg_score += pst[PAWN][MG_INDEX][to]
-                    self.eg_score += pst[PAWN][EG_INDEX][to]
-                else:
-                    self.mg_score += pst[PAWN][MG_INDEX][from_ ^ 56]
-                    self.eg_score += pst[PAWN][EG_INDEX][from_ ^ 56]
-                    self.mg_score -= pst[PAWN][MG_INDEX][to ^ 56]
-                    self.eg_score -= pst[PAWN][EG_INDEX][to ^ 56]
+                p = pst[PAWN]
+                p_mg = p[MG_INDEX]
+                p_eg = p[EG_INDEX]
+                mg += side_to_move * (p_mg[to ^ _flip] - p_mg[from_ ^ _flip])
+                eg += side_to_move * (p_eg[to ^ _flip] - p_eg[from_ ^ _flip])
 
-                if (to - from_) == 16 or (to - from_) == -16: # Note abs() is slower than direct comparison
-                    self.en_passant_square = (from_ + to) // 2
+                diff = to - from_
+                if diff == 16 or diff == -16:
+                    self.en_passant_square = (from_ + to) >> 1
 
                 elif en_passant_prev != 0 and to == en_passant_prev:
-                    if side_to_move == WHITE:
-                        captured_pawn_square = to - 8
-                    else:
-                        captured_pawn_square = to + 8
-
+                    captured_pawn_square = to - 8 if side_to_move == WHITE else to + 8
                     captured_pawn_bitboard = 1 << captured_pawn_square
                     self.pawn &= ~captured_pawn_bitboard
                     self.board_occupied_squares[ATT_INDEX] &= ~captured_pawn_bitboard
                     
-                    if side_to_move == WHITE:
-                        self.mg_score += pst[PAWN][MG_INDEX][captured_pawn_square ^ 56]
-                        self.eg_score += pst[PAWN][EG_INDEX][captured_pawn_square ^ 56]
-                    else:
-                        self.mg_score -= pst[PAWN][MG_INDEX][captured_pawn_square]
-                        self.eg_score -= pst[PAWN][EG_INDEX][captured_pawn_square]
-
-        elif from_piece == BISHOP:
-            self.bishop = (self.bishop & ~from_bitboard) | to_bitboard
-            if side_to_move == WHITE:
-                self.mg_score -= pst[BISHOP][MG_INDEX][from_]
-                self.eg_score -= pst[BISHOP][EG_INDEX][from_]
-                self.mg_score += pst[BISHOP][MG_INDEX][to]
-                self.eg_score += pst[BISHOP][EG_INDEX][to]
-            else:
-                self.mg_score += pst[BISHOP][MG_INDEX][from_ ^ 56]
-                self.eg_score += pst[BISHOP][EG_INDEX][from_ ^ 56]
-                self.mg_score -= pst[BISHOP][MG_INDEX][to ^ 56]
-                self.eg_score -= pst[BISHOP][EG_INDEX][to ^ 56]
+                    ep_pst = pst[PAWN]
+                    mg += side_to_move * ep_pst[MG_INDEX][captured_pawn_square ^ _eflip]
+                    eg += side_to_move * ep_pst[EG_INDEX][captured_pawn_square ^ _eflip]
 
         elif from_piece == KNIGHT:
-            self.knight = (self.knight & ~from_bitboard) | to_bitboard
-            if side_to_move == WHITE:
-                self.mg_score -= pst[KNIGHT][MG_INDEX][from_]
-                self.eg_score -= pst[KNIGHT][EG_INDEX][from_]
-                self.mg_score += pst[KNIGHT][MG_INDEX][to]
-                self.eg_score += pst[KNIGHT][EG_INDEX][to]
-            else:
-                self.mg_score += pst[KNIGHT][MG_INDEX][from_ ^ 56]
-                self.eg_score += pst[KNIGHT][EG_INDEX][from_ ^ 56]
-                self.mg_score -= pst[KNIGHT][MG_INDEX][to ^ 56]
-                self.eg_score -= pst[KNIGHT][EG_INDEX][to ^ 56]
+            self.knight ^= move_mask
+            n = pst[KNIGHT]
+            mg += side_to_move * (n[MG_INDEX][to ^ _flip] - n[MG_INDEX][from_ ^ _flip])
+            eg += side_to_move * (n[EG_INDEX][to ^ _flip] - n[EG_INDEX][from_ ^ _flip])
+
+        elif from_piece == BISHOP:
+            self.bishop ^= move_mask
+            b = pst[BISHOP]
+            mg += side_to_move * (b[MG_INDEX][to ^ _flip] - b[MG_INDEX][from_ ^ _flip])
+            eg += side_to_move * (b[EG_INDEX][to ^ _flip] - b[EG_INDEX][from_ ^ _flip])
 
         elif from_piece == ROOK:
-            self.rook = (self.rook & ~from_bitboard) | to_bitboard
-            if side_to_move == WHITE:
-                self.mg_score -= pst[ROOK][MG_INDEX][from_]
-                self.eg_score -= pst[ROOK][EG_INDEX][from_]
-                self.mg_score += pst[ROOK][MG_INDEX][to]
-                self.eg_score += pst[ROOK][EG_INDEX][to]
-            else:
-                self.mg_score += pst[ROOK][MG_INDEX][from_ ^ 56]
-                self.eg_score += pst[ROOK][EG_INDEX][from_ ^ 56]
-                self.mg_score -= pst[ROOK][MG_INDEX][to ^ 56]
-                self.eg_score -= pst[ROOK][EG_INDEX][to ^ 56]
-            
-            if from_ == 7: 
-                self.castling_rights &= ~CR_WK
-            if from_ == 0: 
-                self.castling_rights &= ~CR_WQ
-            if from_ == 63: 
-                self.castling_rights &= ~CR_BK
-            if from_ == 56: 
-                self.castling_rights &= ~CR_BQ
+            self.rook ^= move_mask
+            r = pst[ROOK]
+            mg += side_to_move * (r[MG_INDEX][to ^ _flip] - r[MG_INDEX][from_ ^ _flip])
+            eg += side_to_move * (r[EG_INDEX][to ^ _flip] - r[EG_INDEX][from_ ^ _flip])
 
         elif from_piece == QUEEN:
-            self.queen = (self.queen & ~from_bitboard) | to_bitboard
-            if side_to_move == WHITE:
-                self.mg_score -= pst[QUEEN][MG_INDEX][from_]
-                self.eg_score -= pst[QUEEN][EG_INDEX][from_]
-                self.mg_score += pst[QUEEN][MG_INDEX][to]
-                self.eg_score += pst[QUEEN][EG_INDEX][to]
-            else:
-                self.mg_score += pst[QUEEN][MG_INDEX][from_ ^ 56]
-                self.eg_score += pst[QUEEN][EG_INDEX][from_ ^ 56]
-                self.mg_score -= pst[QUEEN][MG_INDEX][to ^ 56]
-                self.eg_score -= pst[QUEEN][EG_INDEX][to ^ 56]
+            self.queen ^= move_mask
+            q = pst[QUEEN]
+            mg += side_to_move * (q[MG_INDEX][to ^ _flip] - q[MG_INDEX][from_ ^ _flip])
+            eg += side_to_move * (q[EG_INDEX][to ^ _flip] - q[EG_INDEX][from_ ^ _flip])
 
-        else:
-            self.king = (self.king & ~from_bitboard) | to_bitboard
-
+        else:  # KING
+            self.king ^= move_mask
             self.king_square[INDEX] = to
-            
-            if side_to_move == WHITE:
-                self.mg_score -= pst[KING][MG_INDEX][from_]
-                self.eg_score -= pst[KING][EG_INDEX][from_]
-                self.mg_score += pst[KING][MG_INDEX][to]
-                self.eg_score += pst[KING][EG_INDEX][to]
-            else:
-                self.mg_score += pst[KING][MG_INDEX][from_ ^ 56]
-                self.eg_score += pst[KING][EG_INDEX][from_ ^ 56]
-                self.mg_score -= pst[KING][MG_INDEX][to ^ 56]
-                self.eg_score -= pst[KING][EG_INDEX][to ^ 56]
 
-            if side_to_move == WHITE:
-                self.castling_rights &= ~CR_WK
-                self.castling_rights &= ~CR_WQ
-            else:
-                self.castling_rights &= ~CR_BK
-                self.castling_rights &= ~CR_BQ
+            k = pst[KING]
+            mg += side_to_move * (k[MG_INDEX][to ^ _flip] - k[MG_INDEX][from_ ^ _flip])
+            eg += side_to_move * (k[EG_INDEX][to ^ _flip] - k[EG_INDEX][from_ ^ _flip])
 
-        if from_piece == KING:
             d = to - from_
-            if d == 2:  
-                rook_from_mask = 1 << (7 if side_to_move == WHITE else 63)
-                rook_to_mask = 1 << (5 if side_to_move == WHITE else 61)
+            if d == 2:
+                rook_from = 7 if side_to_move == WHITE else 63
+                rook_to = 5 if side_to_move == WHITE else 61
+                rook_move_mask = (1 << rook_from) | (1 << rook_to)
+                self.rook ^= rook_move_mask
+                self.board_occupied_squares[INDEX] ^= rook_move_mask
 
-                self.rook = (self.rook & ~rook_from_mask) | rook_to_mask
-                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_from_mask) | rook_to_mask
-                
-                if side_to_move == WHITE:
-                    self.mg_score -= pst[ROOK][MG_INDEX][7]
-                    self.eg_score -= pst[ROOK][EG_INDEX][7]
-                    self.mg_score += pst[ROOK][MG_INDEX][5]
-                    self.eg_score += pst[ROOK][EG_INDEX][5]
-                else:
-                    self.mg_score += pst[ROOK][MG_INDEX][63 ^ 56]
-                    self.eg_score += pst[ROOK][EG_INDEX][63 ^ 56]
-                    self.mg_score -= pst[ROOK][MG_INDEX][61 ^ 56]
-                    self.eg_score -= pst[ROOK][EG_INDEX][61 ^ 56]
+                r = pst[ROOK]
+                mg += side_to_move * (r[MG_INDEX][rook_to ^ _flip] - r[MG_INDEX][rook_from ^ _flip])
+                eg += side_to_move * (r[EG_INDEX][rook_to ^ _flip] - r[EG_INDEX][rook_from ^ _flip])
 
-            elif d == -2:  
-                rook_from_mask = 1 << (0 if side_to_move == WHITE else 56)
-                rook_to_mask = 1 << (3 if side_to_move == WHITE else 59)
-                
-                self.rook = (self.rook & ~rook_from_mask) | rook_to_mask
-                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_from_mask) | rook_to_mask
-                
-                if side_to_move == WHITE:
-                    self.mg_score -= pst[ROOK][MG_INDEX][0]
-                    self.eg_score -= pst[ROOK][EG_INDEX][0]
-                    self.mg_score += pst[ROOK][MG_INDEX][3]
-                    self.eg_score += pst[ROOK][EG_INDEX][3]
-                else:
-                    self.mg_score += pst[ROOK][MG_INDEX][56 ^ 56]
-                    self.eg_score += pst[ROOK][EG_INDEX][56 ^ 56]
-                    self.mg_score -= pst[ROOK][MG_INDEX][59 ^ 56]
-                    self.eg_score -= pst[ROOK][EG_INDEX][59 ^ 56]
+            elif d == -2:
+                rook_from = 0 if side_to_move == WHITE else 56
+                rook_to = 3 if side_to_move == WHITE else 59
+                rook_move_mask = (1 << rook_from) | (1 << rook_to)
+                self.rook ^= rook_move_mask
+                self.board_occupied_squares[INDEX] ^= rook_move_mask
 
-        self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~from_bitboard) | to_bitboard
+                r = pst[ROOK]
+                mg += side_to_move * (r[MG_INDEX][rook_to ^ _flip] - r[MG_INDEX][rook_from ^ _flip])
+                eg += side_to_move * (r[EG_INDEX][rook_to ^ _flip] - r[EG_INDEX][rook_from ^ _flip])
+
+        self.board_occupied_squares[INDEX] ^= move_mask
         self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
 
+        self.mg_score = mg
+        self.eg_score = eg
+
         if promotion_piece:
-            self.mailbox[to] = promotion_piece if side_to_move == WHITE else -promotion_piece
+            mailbox[to] = promotion_piece * side_to_move
         else:
-            self.mailbox[to] = self.mailbox[from_]
+            mailbox[to] = mailbox[from_]
         
-        self.mailbox[from_] = EMPTY
+        mailbox[from_] = EMPTY
 
         if from_piece == PAWN and not promotion_piece and en_passant_prev != 0 and to == en_passant_prev:
-            self.mailbox[to - 8 if side_to_move == WHITE else to + 8] = EMPTY
+            mailbox[to - 8 if side_to_move == WHITE else to + 8] = EMPTY
         elif from_piece == KING:
             d = to - from_
             if d == 2:
-                self.mailbox[5 if side_to_move == WHITE else 61] = self.mailbox[7 if side_to_move == WHITE else 63]
-                self.mailbox[7 if side_to_move == WHITE else 63] = EMPTY
+                mailbox[5 if side_to_move == WHITE else 61] = mailbox[7 if side_to_move == WHITE else 63]
+                mailbox[7 if side_to_move == WHITE else 63] = EMPTY
             elif d == -2:
-                self.mailbox[3 if side_to_move == WHITE else 59] = self.mailbox[0 if side_to_move == WHITE else 56]
-                self.mailbox[0 if side_to_move == WHITE else 56] = EMPTY
+                mailbox[3 if side_to_move == WHITE else 59] = mailbox[0 if side_to_move == WHITE else 56]
+                mailbox[0 if side_to_move == WHITE else 56] = EMPTY
+
+        self.castling_rights &= CASTLING_UPDATE[from_] & CASTLING_UPDATE[to]
 
         return undo
     
@@ -962,41 +848,42 @@ class Board:
 
         from_bitboard = 1 << from_
         to_bitboard = 1 << to
+        move_mask = from_bitboard | to_bitboard
 
         INDEX = WHITE_INDEX if side_to_move == WHITE else BLACK_INDEX
         ATT_INDEX = 1 - INDEX
 
-        color_sign = 1 if side_to_move == WHITE else -1
-        self.mailbox[from_] = from_piece * color_sign
+        mailbox = self.mailbox
+        mailbox[from_] = from_piece * side_to_move
 
-        if to_piece == 0:
-            self.mailbox[to] = EMPTY
+        if to_piece:
+            mailbox[to] = to_piece * (-side_to_move)
         else:
-            self.mailbox[to] = to_piece * (-color_sign)
+            mailbox[to] = EMPTY
 
         self.castling_rights = castling_rights_prev
 
         if from_piece == KING:
             d = to - from_
             if d == 2:
-                rook_from_mask = 1 << (7 if side_to_move == WHITE else 63)
-                rook_to_mask = 1 << (5 if side_to_move == WHITE else 61)
+                rook_from = 7 if side_to_move == WHITE else 63
+                rook_to = 5 if side_to_move == WHITE else 61
+                rook_move_mask = (1 << rook_from) | (1 << rook_to)
+                self.rook ^= rook_move_mask
+                self.board_occupied_squares[INDEX] ^= rook_move_mask
 
-                self.rook = (self.rook & ~rook_to_mask) | rook_from_mask
-                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_to_mask) | rook_from_mask
-                
-                self.mailbox[7 if side_to_move == WHITE else 63] = self.mailbox[5 if side_to_move == WHITE else 61]
-                self.mailbox[5 if side_to_move == WHITE else 61] = EMPTY
+                mailbox[rook_from] = mailbox[rook_to]
+                mailbox[rook_to] = EMPTY
 
             elif d == -2:
-                rook_from_mask = 1 << (0 if side_to_move == WHITE else 56)
-                rook_to_mask = 1 << (3 if side_to_move == WHITE else 59)
+                rook_from = 0 if side_to_move == WHITE else 56
+                rook_to = 3 if side_to_move == WHITE else 59
+                rook_move_mask = (1 << rook_from) | (1 << rook_to)
+                self.rook ^= rook_move_mask
+                self.board_occupied_squares[INDEX] ^= rook_move_mask
 
-                self.rook = (self.rook & ~rook_to_mask) | rook_from_mask
-                self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~rook_to_mask) | rook_from_mask
-                
-                self.mailbox[0 if side_to_move == WHITE else 56] = self.mailbox[3 if side_to_move == WHITE else 59]
-                self.mailbox[3 if side_to_move == WHITE else 59] = EMPTY
+                mailbox[rook_from] = mailbox[rook_to]
+                mailbox[rook_to] = EMPTY
 
         if from_piece == PAWN:
             if promotion_piece:
@@ -1010,31 +897,27 @@ class Board:
                     self.knight &= ~to_bitboard
                 self.pawn |= from_bitboard
             else:
-                self.pawn = (self.pawn & ~to_bitboard) | from_bitboard
+                self.pawn ^= move_mask
                 
-                if to == en_passant_prev and en_passant_prev != 0:
-                    if side_to_move == WHITE:
-                        captured_pawn_square = to - 8
-                    else:
-                        captured_pawn_square = to + 8
-
+                if en_passant_prev and to == en_passant_prev:
+                    captured_pawn_square = to - 8 if side_to_move == WHITE else to + 8
                     captured_pawn_bitboard = 1 << captured_pawn_square
                     self.pawn |= captured_pawn_bitboard
                     self.board_occupied_squares[ATT_INDEX] |= captured_pawn_bitboard
                     
-                    self.mailbox[captured_pawn_square] = PAWN * (-color_sign)
-                    self.mailbox[to] = EMPTY
+                    mailbox[captured_pawn_square] = PAWN * (-side_to_move)
+                    mailbox[to] = EMPTY
 
         elif from_piece == BISHOP:
-            self.bishop = (self.bishop & ~to_bitboard) | from_bitboard
+            self.bishop ^= move_mask
         elif from_piece == KNIGHT:
-            self.knight = (self.knight & ~to_bitboard) | from_bitboard
+            self.knight ^= move_mask
         elif from_piece == ROOK:
-            self.rook = (self.rook & ~to_bitboard) | from_bitboard
+            self.rook ^= move_mask
         elif from_piece == QUEEN:
-            self.queen = (self.queen & ~to_bitboard) | from_bitboard
+            self.queen ^= move_mask
         else:
-            self.king = (self.king & ~to_bitboard) | from_bitboard
+            self.king ^= move_mask
             self.king_square[INDEX] = from_
 
         if to_piece:
@@ -1053,11 +936,10 @@ class Board:
 
             self.board_occupied_squares[ATT_INDEX] |= to_bitboard
         
-        self.board_occupied_squares[INDEX] = (self.board_occupied_squares[INDEX] & ~to_bitboard) | from_bitboard
+        self.board_occupied_squares[INDEX] ^= move_mask
         self.all_board_occupied_squares = self.board_occupied_squares[WHITE_INDEX] | self.board_occupied_squares[BLACK_INDEX]
         self.counter_halfmove_without_capture = counter_halfmove_without_capture
         self.en_passant_square = en_passant_prev
-
 
 
 class MoveGen:    
@@ -1782,6 +1664,82 @@ class MoveGen:
     
 
     @staticmethod
+    def get_pinned_pieces(board_obj, king_square, INDEX, ENEMY_INDEX) -> int:
+        """
+        Get a bitboard of pinned pieces for the specified king square and side.
+
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            king_square (int): Square index of the king.
+            INDEX (int): Index for the side (WHITE_INDEX=0 or BLACK_INDEX=1).
+            ENEMY_INDEX (int): Index for the enemy side (WHITE_INDEX=0 or BLACK_INDEX=1).
+        
+        Returns:
+            int: Bitboard of pinned pieces.
+        """
+
+        board_occupied_squares = board_obj.board_occupied_squares
+        own_occupied_squares = board_occupied_squares[INDEX]
+        enemy_occupied_squares = board_occupied_squares[ENEMY_INDEX]
+
+        all_board_occupied_squares = board_obj.all_board_occupied_squares
+
+        pinned = 0
+
+        enemy_rook_like = (board_obj.rook | board_obj.queen) & enemy_occupied_squares
+
+        if enemy_rook_like:
+            occ_rel = all_board_occupied_squares & ROOK_MASK[king_square]
+            idx = ((occ_rel * ROOK_MAGIC[king_square]) & U64) >> ROOK_SHIFT[king_square]
+            king_rook_attacks = ROOK_TABLE[king_square][idx]
+
+            own_on_ray = king_rook_attacks & own_occupied_squares
+            if own_on_ray:
+                no_own_on_ray = all_board_occupied_squares ^ own_on_ray
+                occ_rel2 = no_own_on_ray & ROOK_MASK[king_square]
+                idx2 = ((occ_rel2 * ROOK_MAGIC[king_square]) & U64) >> ROOK_SHIFT[king_square]
+
+                ray = ROOK_TABLE[king_square][idx2]
+
+                pinners = ray & enemy_rook_like & ~king_rook_attacks
+                while pinners:
+                    pinner_square = (pinners & -pinners).bit_length() - 1
+
+                    occ_rel3 = all_board_occupied_squares & ROOK_MASK[pinner_square]
+                    idx3 = ((occ_rel3 * ROOK_MAGIC[pinner_square]) & U64) >> ROOK_SHIFT[pinner_square]
+                    pinned |= ROOK_TABLE[pinner_square][idx3] & king_rook_attacks & own_occupied_squares
+
+                    pinners &= pinners - 1
+
+
+        enemy_bishop_like = (board_obj.bishop | board_obj.queen) & enemy_occupied_squares
+
+        if enemy_bishop_like:
+            occ_rel = all_board_occupied_squares & BISHOP_MASK[king_square]
+            idx = ((occ_rel * BISHOP_MAGIC[king_square]) & U64) >> BISHOP_SHIFT[king_square]
+            king_bishop_attacks = BISHOP_TABLE[king_square][idx]
+
+            own_on_ray = king_bishop_attacks & own_occupied_squares
+            if own_on_ray:
+                no_own_on_ray = all_board_occupied_squares ^ own_on_ray
+                occ_rel2 = no_own_on_ray & BISHOP_MASK[king_square]
+                idx2 = ((occ_rel2 * BISHOP_MAGIC[king_square]) & U64) >> BISHOP_SHIFT[king_square]
+
+                ray = BISHOP_TABLE[king_square][idx2]
+
+                pinners = ray & enemy_bishop_like & ~king_bishop_attacks
+                while pinners:
+                    pinner_square = (pinners & -pinners).bit_length() - 1
+
+                    occ_rel3 = all_board_occupied_squares & BISHOP_MASK[pinner_square]
+                    idx3 = ((occ_rel3 * BISHOP_MAGIC[pinner_square]) & U64) >> BISHOP_SHIFT[pinner_square]
+                    pinned |= BISHOP_TABLE[pinner_square][idx3] & king_bishop_attacks & own_occupied_squares
+
+                    pinners &= pinners - 1
+
+        return pinned
+
+    @staticmethod
     def list_all_legal_moves(board_obj, side, castling = True) -> list[int]:
         """
         Generate all legal moves for a side (excluding moves leaving king in check).
@@ -1798,30 +1756,126 @@ class MoveGen:
         list_all_moves = []
         append = list_all_moves.append
 
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        ENEMY_INDEX = 1 - INDEX
+
         make = board_obj.make_move
         unmake = board_obj.unmake_move
+
         attackers_to = GameState.attackers_to
-        king_square = board_obj.king_square
-        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        king_squares = board_obj.king_square
 
-        gens = (
-            MoveGen.list_all_pawn_moves,
-            MoveGen.list_all_knight_moves,
-            MoveGen.list_all_bishop_moves,
-            MoveGen.list_all_rook_moves,
-            MoveGen.list_all_queen_moves,
-            lambda b, s: MoveGen.list_all_king_moves(b, s, castling),
-        )
+        in_check = attackers_to(board_obj, side, king_squares[INDEX])
 
-        for gen in gens:
-            for mv in gen(board_obj, side):
-                undo = make(mv, side)
-                if not attackers_to(board_obj, side, king_square[INDEX]):
-                    append(mv)
+        if in_check:
+            for move in MoveGen.list_all_pawn_moves(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
                 unmake(undo, side)
 
-        return list_all_moves
+            for move in MoveGen.list_all_knight_moves(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
 
+            for move in MoveGen.list_all_bishop_moves(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_rook_moves(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_queen_moves(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_king_moves(board_obj, side, castling):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            return list_all_moves
+        
+        en_passant_square = board_obj.en_passant_square
+        pinned = MoveGen.get_pinned_pieces(board_obj, king_squares[INDEX], INDEX, ENEMY_INDEX)
+
+        if not pinned and not en_passant_square:
+            list_all_moves.extend(MoveGen.list_all_pawn_moves(board_obj, side))
+        else:
+            for move in MoveGen.list_all_pawn_moves(board_obj, side):
+                from_square = move & 0b111111
+                to_square = (move >> 6) & 0b111111
+
+                if (SQUARE_MASKS[from_square] & pinned) or (en_passant_square and (to_square == en_passant_square and (from_square & 7) != (to_square & 7))):
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_moves.extend(MoveGen.list_all_knight_moves(board_obj, side))
+        else:
+            for move in MoveGen.list_all_knight_moves(board_obj, side):
+                if not (SQUARE_MASKS[move & 0b111111] & pinned):
+                    append(move)    
+
+        if not pinned:
+            list_all_moves.extend(MoveGen.list_all_bishop_moves(board_obj, side))
+        else:
+            for move in MoveGen.list_all_bishop_moves(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_moves.extend(MoveGen.list_all_rook_moves(board_obj, side))
+        else:
+            for move in MoveGen.list_all_rook_moves(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_moves.extend(MoveGen.list_all_queen_moves(board_obj, side))
+        else:
+            for move in MoveGen.list_all_queen_moves(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        for move in MoveGen.list_all_king_moves(board_obj, side, castling):
+            undo = make(move, side)
+            if not attackers_to(board_obj, side, king_squares[INDEX]):
+                append(move)
+            unmake(undo, side)
+        
+        return list_all_moves
+    
 
     @staticmethod
     def generate_all_moves(board_obj, side, castling = True):
@@ -1840,50 +1894,149 @@ class MoveGen:
         make = board_obj.make_move
         unmake = board_obj.unmake_move
         attackers_to = GameState.attackers_to
-        king_square = board_obj.king_square
+        
         INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        ENEMY_INDEX = 1 - INDEX
+
+        king_square = board_obj.king_square[INDEX]
+        in_check = attackers_to(board_obj, side, king_square)
+
+        if in_check:
+            for e in MoveGen.list_all_king_moves(board_obj, side, castling):
+                undo = make(e, side)
+                if not attackers_to(board_obj, side, board_obj.king_square[INDEX]):
+                    unmake(undo, side)
+                    yield e
+
+                else:
+                    unmake(undo, side)
+
+            for e in MoveGen.list_all_queen_moves(board_obj, side):
+                undo = make(e, side)
+                if not attackers_to(board_obj, side, king_square):
+                    unmake(undo, side)
+                    yield e
+                    
+                else:
+                    unmake(undo, side)
+
+            for e in MoveGen.list_all_knight_moves(board_obj, side):
+                undo = make(e, side)
+                if not attackers_to(board_obj, side, king_square):
+                    unmake(undo, side)
+                    yield e
+
+                else:
+                    unmake(undo, side)
+
+            for e in MoveGen.list_all_bishop_moves(board_obj, side):
+                undo = make(e, side)
+                if not attackers_to(board_obj, side, king_square):
+                    unmake(undo, side)
+                    yield e
+                    
+                else:
+                    unmake(undo, side)
+
+            for e in MoveGen.list_all_rook_moves(board_obj, side):
+                undo = make(e, side)
+                if not attackers_to(board_obj, side, king_square):
+                    unmake(undo, side)
+                    yield e
+
+                else:
+                    unmake(undo, side)
+                    
+            for e in MoveGen.list_all_pawn_moves(board_obj, side):
+                undo = make(e, side)
+                if not attackers_to(board_obj, side, king_square):
+                    unmake(undo, side)
+                    yield e
+
+                else:
+                    unmake(undo, side)
+
+            return
+        
+        pinned = MoveGen.get_pinned_pieces(board_obj, king_square, INDEX, ENEMY_INDEX)
+        en_passant_square = board_obj.en_passant_square
 
         for e in MoveGen.list_all_king_moves(board_obj, side, castling):
             undo = make(e, side)
-            legal = not attackers_to(board_obj, side, king_square[INDEX])
-            unmake(undo, side)
-            if legal:
+            if not attackers_to(board_obj, side, board_obj.king_square[INDEX]):
+                unmake(undo, side)
                 yield e
 
-        for e in MoveGen.list_all_queen_moves(board_obj, side):
-            undo = make(e, side)
-            legal = not attackers_to(board_obj, side, king_square[INDEX])
-            unmake(undo, side)
-            if legal:
-                yield e
-        
-        for e in MoveGen.list_all_knight_moves(board_obj, side):
-            undo = make(e, side)
-            legal = not attackers_to(board_obj, side, king_square[INDEX])
-            unmake(undo, side)
-            if legal:
-                yield e
-    
-        for e in MoveGen.list_all_bishop_moves(board_obj, side):
-            undo = make(e, side)
-            legal = not attackers_to(board_obj, side, king_square[INDEX])
-            unmake(undo, side)
-            if legal:
-                yield e
+            else:
+                unmake(undo, side)
 
-        for e in MoveGen.list_all_rook_moves(board_obj, side):
-            undo = make(e, side)
-            legal = not attackers_to(board_obj, side, king_square[INDEX])
-            unmake(undo, side)
-            if legal:
-                yield e
-        
-        for e in MoveGen.list_all_pawn_moves(board_obj, side):
-            undo = make(e, side)
-            legal = not attackers_to(board_obj, side, king_square[INDEX])
-            unmake(undo, side)
-            if legal:
-                yield e
+        if not pinned:
+            yield from MoveGen.list_all_queen_moves(board_obj, side)
+        else:
+            for e in MoveGen.list_all_queen_moves(board_obj, side):
+                if SQUARE_MASKS[e & 0x3F] & pinned:
+                    undo = make(e, side)
+                    if not attackers_to(board_obj, side, king_square):
+                        unmake(undo, side)
+                        yield e
+                    else:
+                        unmake(undo, side)
+                else:
+                    yield e
+
+        if not pinned:
+            yield from MoveGen.list_all_knight_moves(board_obj, side)
+        else:
+            for e in MoveGen.list_all_knight_moves(board_obj, side):
+                if not (SQUARE_MASKS[e & 0x3F] & pinned):
+                    yield e
+
+        if not pinned:
+            yield from MoveGen.list_all_bishop_moves(board_obj, side)
+        else:
+            for e in MoveGen.list_all_bishop_moves(board_obj, side):
+                if SQUARE_MASKS[e & 0x3F] & pinned:
+                    undo = make(e, side)
+                    if not attackers_to(board_obj, side, king_square):
+                        unmake(undo, side)
+                        yield e
+                    else:
+                        unmake(undo, side)
+                else:
+                    yield e
+
+        if not pinned:
+            yield from MoveGen.list_all_rook_moves(board_obj, side)
+        else:
+            for e in MoveGen.list_all_rook_moves(board_obj, side):
+                if SQUARE_MASKS[e & 0x3F] & pinned:
+                    undo = make(e, side)
+                    if not attackers_to(board_obj, side, king_square):
+                        unmake(undo, side)
+                        yield e
+                    else:
+                        unmake(undo, side)
+                else:
+                    yield e
+
+        if not pinned and not en_passant_square:
+            yield from MoveGen.list_all_pawn_moves(board_obj, side)
+
+        else:
+            for e in MoveGen.list_all_pawn_moves(board_obj, side):
+                from_square = e & 0x3F
+                to_square = (e >> 6) & 0x3F
+
+                if (SQUARE_MASKS[from_square] & pinned) or (en_passant_square and to_square == en_passant_square and (from_square & 7) != (to_square & 7)):
+                    undo = make(e, side)
+                    if not attackers_to(board_obj, side, king_square):
+                        unmake(undo, side)
+                        yield e
+                    else:
+                        unmake(undo, side)
+                else:
+                    yield e
+
 
 
     @staticmethod
@@ -1898,31 +2051,125 @@ class MoveGen:
         Returns:
             list: Encoded moves as (from_square | (to_square << 6)).
         """
-        
+
         list_all_captures = []
         append = list_all_captures.append
+
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        ENEMY_INDEX = 1 - INDEX
 
         make = board_obj.make_move
         unmake = board_obj.unmake_move
         attackers_to = GameState.attackers_to
-        king_square = board_obj.king_square
-        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        king_squares = board_obj.king_square
 
-        gens = (
-            MoveGen.list_all_pawn_captures,
-            MoveGen.list_all_knight_captures,
-            MoveGen.list_all_bishop_captures,
-            MoveGen.list_all_rook_captures,
-            MoveGen.list_all_queen_captures,
-            lambda b, s: MoveGen.list_all_king_captures(b, s, False),
-        )
+        in_check = attackers_to(board_obj, side, king_squares[INDEX])
 
-        for gen in gens:
-            for mv in gen(board_obj, side):
-                undo = make(mv, side)
-                if not attackers_to(board_obj, side, king_square[INDEX]):
-                    append(mv)
+        if in_check:
+            for move in MoveGen.list_all_pawn_captures(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
                 unmake(undo, side)
+
+            for move in MoveGen.list_all_knight_captures(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_bishop_captures(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_rook_captures(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_queen_captures(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_king_captures(board_obj, side, False):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            return list_all_captures
+
+        en_passant_square = board_obj.en_passant_square
+        pinned = MoveGen.get_pinned_pieces(board_obj, king_squares[INDEX], INDEX, ENEMY_INDEX)
+
+        if not pinned and not en_passant_square:
+            list_all_captures.extend(MoveGen.list_all_pawn_captures(board_obj, side))
+        else:
+            for move in MoveGen.list_all_pawn_captures(board_obj, side):
+                from_square = move & 0b111111
+                to_square = (move >> 6) & 0b111111
+
+                if (SQUARE_MASKS[from_square] & pinned) or (en_passant_square and (to_square == en_passant_square and (from_square & 7) != (to_square & 7))):
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_captures.extend(MoveGen.list_all_knight_captures(board_obj, side))
+        else:
+            for move in MoveGen.list_all_knight_captures(board_obj, side):
+                if not (SQUARE_MASKS[move & 0b111111] & pinned):
+                    append(move)
+
+        if not pinned:
+            list_all_captures.extend(MoveGen.list_all_bishop_captures(board_obj, side))
+        else:
+            for move in MoveGen.list_all_bishop_captures(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_captures.extend(MoveGen.list_all_rook_captures(board_obj, side))
+        else:
+            for move in MoveGen.list_all_rook_captures(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_captures.extend(MoveGen.list_all_queen_captures(board_obj, side))
+        else:
+            for move in MoveGen.list_all_queen_captures(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        for move in MoveGen.list_all_king_captures(board_obj, side, False):
+            undo = make(move, side)
+            if not attackers_to(board_obj, side, king_squares[INDEX]):
+                append(move)
+            unmake(undo, side)
 
         return list_all_captures
     
@@ -2312,27 +2559,117 @@ class MoveGen:
         list_all_quiets = []
         append = list_all_quiets.append
 
+        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        ENEMY_INDEX = 1 - INDEX
+
         make = board_obj.make_move
         unmake = board_obj.unmake_move
         attackers_to = GameState.attackers_to
-        king_square = board_obj.king_square
-        INDEX = WHITE_INDEX if side == WHITE else BLACK_INDEX
+        king_squares = board_obj.king_square
 
-        gens = (
-            MoveGen.list_all_pawn_quiets,
-            MoveGen.list_all_knight_quiets,
-            MoveGen.list_all_bishop_quiets,
-            MoveGen.list_all_rook_quiets,
-            MoveGen.list_all_queen_quiets,
-            lambda b, s: MoveGen.list_all_king_quiets(b, s, castling),
-        )
+        in_check = attackers_to(board_obj, side, king_squares[INDEX])
 
-        for gen in gens:
-            for mv in gen(board_obj, side):
-                undo = make(mv, side)
-                if not attackers_to(board_obj, side, king_square[INDEX]):
-                    append(mv)
+        if in_check:
+            for move in MoveGen.list_all_pawn_quiets(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
                 unmake(undo, side)
+
+            for move in MoveGen.list_all_knight_quiets(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_bishop_quiets(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_rook_quiets(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_queen_quiets(board_obj, side):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            for move in MoveGen.list_all_king_quiets(board_obj, side, castling):
+                undo = make(move, side)
+                if not attackers_to(board_obj, side, king_squares[INDEX]):
+                    append(move)
+                unmake(undo, side)
+
+            return list_all_quiets
+
+        pinned = MoveGen.get_pinned_pieces(board_obj, king_squares[INDEX], INDEX, ENEMY_INDEX)
+
+        if not pinned:
+            list_all_quiets.extend(MoveGen.list_all_pawn_quiets(board_obj, side))
+        else:
+            for move in MoveGen.list_all_pawn_quiets(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_quiets.extend(MoveGen.list_all_knight_quiets(board_obj, side))
+        else:
+            for move in MoveGen.list_all_knight_quiets(board_obj, side):
+                if not (SQUARE_MASKS[move & 0b111111] & pinned):
+                    append(move)
+
+        if not pinned:
+            list_all_quiets.extend(MoveGen.list_all_bishop_quiets(board_obj, side))
+        else:
+            for move in MoveGen.list_all_bishop_quiets(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_quiets.extend(MoveGen.list_all_rook_quiets(board_obj, side))
+        else:
+            for move in MoveGen.list_all_rook_quiets(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        if not pinned:
+            list_all_quiets.extend(MoveGen.list_all_queen_quiets(board_obj, side))
+        else:
+            for move in MoveGen.list_all_queen_quiets(board_obj, side):
+                if SQUARE_MASKS[move & 0b111111] & pinned:
+                    undo = make(move, side)
+                    if not attackers_to(board_obj, side, king_squares[INDEX]):
+                        append(move)
+                    unmake(undo, side)
+                else:
+                    append(move)
+
+        for move in MoveGen.list_all_king_quiets(board_obj, side, castling):
+            undo = make(move, side)
+            if not attackers_to(board_obj, side, king_squares[INDEX]):
+                append(move)
+            unmake(undo, side)
 
         return list_all_quiets
 
@@ -4171,6 +4508,5 @@ class ChessCore:
 
 
 if __name__ == "__main__":
-    print(ChessCore.bitboard_to_fen(0x00003C3C3C000000))
     process = ChessCore()
     process.play()
