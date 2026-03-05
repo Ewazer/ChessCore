@@ -5,7 +5,7 @@ except ImportError:
     from constants import *
     from constants import __all__ as _constants_all
 
-__version__ = "3.1.0"
+__version__ = "3.1.1"
 __author__ = "Leroux Lubin"
 
 __all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay", *_constants_all]
@@ -3970,6 +3970,96 @@ class ChessCore:
         
         except Exception as e:
             return f"Invalid SAN move: {str(e)}"
+        
+
+    @staticmethod    
+    def encode_move_to_lan(encoded_move, promotion_piece=0) -> str:
+        """
+        Convert an encoded move back to LAN format.
+
+        Args:
+            encoded_move (int): Encoded move as an integer.
+            promotion_piece (int, optional): Promotion piece type (e.g., QUEEN). Defaults to 0 (no promotion).
+
+        Returns:
+            str: Move in LAN format (e.g., "e2e4", "e7e8q").
+        """
+
+        lan_move = f"{INVERSE_SQUARES[encoded_move & 0x3F]}{INVERSE_SQUARES[(encoded_move >> 6) & 0x3F]}"
+
+        if promotion_piece:
+            lan_move += {QUEEN: 'q', ROOK: 'r', BISHOP: 'b', KNIGHT: 'n'}.get(promotion_piece, '')
+
+        return lan_move
+    
+
+    @staticmethod
+    def encode_move_to_san(board_obj, encoded_move, promotion_piece=0, state_indicator=None) -> str:
+        """
+        Convert an encoded move back to SAN format.
+        
+        Args:
+            board_obj (object): Board object with bitboard attributes.
+            encoded_move (int): Encoded move as an integer.
+            promotion_piece (int, optional): Promotion piece type (e.g., QUEEN). Defaults to 0 (no promotion).
+            state_indicator (int, optional): #Todo
+        """
+
+        from_square = encoded_move & 0x3F
+        to_square = (encoded_move >> 6) & 0x3F
+
+        piece_type = board_obj.get_piece_type_and_color(from_square)
+        capture = board_obj.get_piece_type_and_color(to_square) != EMPTY
+
+        if piece_type == KING and abs(from_square - to_square) == 2:
+            return "O-O" if to_square > from_square else "O-O-O"
+        
+        piece_letter = {KING: 'K', QUEEN: 'Q', ROOK: 'R', BISHOP: 'B', KNIGHT: 'N'}.get(abs(piece_type), '')
+
+        disambiguation = ""
+        if abs(piece_type) in (KNIGHT, BISHOP, ROOK, QUEEN):
+            if abs(piece_type) == KNIGHT:
+                candidates = MoveGen.list_all_knight_moves(board_obj, WHITE if piece_type > 0 else BLACK)
+            elif abs(piece_type) == BISHOP:
+                candidates = MoveGen.list_all_bishop_moves(board_obj, WHITE if piece_type > 0 else BLACK)
+            elif abs(piece_type) == ROOK:
+                candidates = MoveGen.list_all_rook_moves(board_obj, WHITE if piece_type > 0 else BLACK)
+            else:
+                candidates = MoveGen.list_all_queen_moves(board_obj, WHITE if piece_type > 0 else BLACK)
+            
+            same_dest_moves = [m for m in candidates if (m >> 6) & 0x3F == to_square]
+            
+            if len(same_dest_moves) > 1:
+                from_file = from_square % 8
+                from_rank = from_square // 8
+                
+                other_files = set()
+                other_ranks = set()
+                for move in same_dest_moves:
+                    if (move & 0x3F) != from_square:
+                        other_files.add((move & 0x3F) % 8)
+                        other_ranks.add((move & 0x3F) // 8)
+                
+                if from_file not in other_files or len(other_files) == 0:
+                    disambiguation = chr(ord('a') + from_file)
+                elif from_rank not in other_ranks or len(other_ranks) == 0:
+                    disambiguation = str(from_rank + 1)
+                else:
+                    disambiguation = chr(ord('a') + from_file) + str(from_rank + 1)
+
+        promotion_str = ""
+        if promotion_piece:
+            promo_char = {QUEEN: 'Q', ROOK: 'R', BISHOP: 'B', KNIGHT: 'N'}.get(promotion_piece, 'Q')
+            promotion_str = f"={promo_char}"
+
+        final_indicator = ""
+        if state_indicator:
+            if GameState.is_checkmate(board_obj, board_obj.side_to_move * -1):
+                final_indicator = "#"
+            elif GameState.attackers_to(board_obj, board_obj.side_to_move * -1, board_obj.king_square[WHITE_INDEX if board_obj.side_to_move == BLACK else BLACK_INDEX]):
+                final_indicator = "+"
+
+        return piece_letter + disambiguation + ('x' if capture else '') + INVERSE_SQUARES[to_square] + promotion_str + final_indicator
 
 
     def play(self, side="white", enable_print=None) -> str:
@@ -4081,5 +4171,6 @@ class ChessCore:
 
 
 if __name__ == "__main__":
+    print(ChessCore.bitboard_to_fen(0x00003C3C3C000000))
     process = ChessCore()
     process.play()
