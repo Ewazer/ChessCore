@@ -5,7 +5,7 @@ except ImportError:
     from constants import *
     from constants import __all__ as _constants_all
 
-__version__ = "3.1.1"
+__version__ = "3.1.0"
 __author__ = "Leroux Lubin"
 
 __all__ = ["ChessCore", "Board", "MoveGen", "GameState", "ChessDisplay", *_constants_all]
@@ -3994,7 +3994,7 @@ class ChessCore:
     
 
     @staticmethod
-    def encode_move_to_san(board_obj, encoded_move, promotion_piece=0, state_indicator=None) -> str:
+    def encode_move_to_san(board_obj, encoded_move, promotion_piece=0, state_indicator=False) -> str:
         """
         Convert an encoded move back to SAN format.
         
@@ -4002,7 +4002,7 @@ class ChessCore:
             board_obj (object): Board object with bitboard attributes.
             encoded_move (int): Encoded move as an integer.
             promotion_piece (int, optional): Promotion piece type (e.g., QUEEN). Defaults to 0 (no promotion).
-            state_indicator (int, optional): #Todo
+            state_indicator (bool, optional): Whether to include check/checkmate indicators. Defaults to False.
         """
 
         from_square = encoded_move & 0x3F
