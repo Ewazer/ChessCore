@@ -133,11 +133,12 @@ SQUARES = {
     "a8": 56, "b8": 57, "c8": 58, "d8": 59, "e8": 60, "f8": 61, "g8": 62, "h8": 63
 }
 
+INVERSE_SQUARES = {v: k for k, v in SQUARES.items()}
+
+
 FILE_INDEXES = {
     "a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7,
 }
-
-INVERSE_SQUARES = {v: k for k, v in SQUARES.items()}
 
 
 SQUARE_MASKS = [1 << square for square in range(64)]
