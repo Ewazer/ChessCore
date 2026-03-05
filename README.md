@@ -1,6 +1,6 @@
 # ChessCore
 
-> **Version 3.1.2** by Leroux Lubin
+> **Version 3.1.1** by Leroux Lubin
 
 ChessCore is an optimized chess core, written entirely in **native Python** (no external dependencies required).
 
@@ -836,34 +836,35 @@ for move in moves:
 
 ## Benchmarks
 
-100K iterations/function, executed on Github Codespaces (2 cores), **PyPy3**, Linux (Ubuntu 24.04):
+Measured with CPython 3.11 on Windows — all timings in **µs/op**.  
+Comparison against [python-chess 1.11.2](https://python-chess.readthedocs.io/).
 
-### Micro-benchmarks
+### ChessCore vs python-chess
 
-| Function | Average time | Ops/s |
-|----------|------------|-------|
-| `Board.__init__()` | 157.63 ns | 6.34M |
-| `Board.material_insufficiency()` | 59.80 ns | 16.72M |
-| `GameState.attackers_to()` (is_check) | 456.12 ns | 2.19M |
-| `GameState.is_checkmate()` | 448.84 ns | 2.23M |
-| `MoveGen.list_all_pawn_moves()` | 1.41 µs | 710.88K |
-| `MoveGen.list_all_knight_moves()` | 416.64 ns | 2.40M |
-| `MoveGen.list_all_bishop_moves()` | 336.63 ns | 2.97M |
-| `MoveGen.list_all_rook_moves()` | 502.84 ns | 1.99M |
-| `MoveGen.list_all_queen_moves()` | 309.48 ns | 3.23M |
-| `MoveGen.list_all_king_moves()` | 128.02 ns | 7.81M |
-| `MoveGen.list_all_legal_moves()` | 12.88 µs | 77.62K |
+| Category | Best position | ChessCore | python-chess | Speedup |
+|----------|--------------|-----------|--------------|---------|
+| Check detection (`attackers_to` vs `is_check`) | B in Check | 0.67 µs | 0.84 µs | **1.25×** faster |
+| Legal moves (`list_all_legal_moves` vs `legal_moves`) | Starting pos | 8.32 µs | 19.87 µs | **2.39×** faster |
+| Captures (`list_all_legal_captures` vs filter) | Middlegame | 5.75 µs | 48.12 µs | **8.37×** faster |
+| Quiet moves (`list_all_legal_quiets` vs filter) | Starting pos | 7.87 µs | 23.92 µs | **3.04×** faster |
+| Make/Unmake (`make_move`+`unmake_move` vs `push`+`pop`) | Middlegame | 1.04 µs | 3.17 µs | **3.05×** faster |
+| FEN loading (`load_board` vs `set_fen`) | 6 FENs/op | 72.25 µs | 246.07 µs | **3.41×** faster |
+| Checkmate detection not mate | Starting pos | 0.79 µs | 0.76 µs | ~equal (1.03× slower) |
+| Pinned pieces (`get_pinned_pieces` vs `board.pin` loop) | Middlegame | 0.87 µs | 18.82 µs | **21.68×** faster |
+| Perft depth 4 (nps) | Starting pos | 521 690 nps | 221 000 nps | **2.36×** faster |
+
+> \* `is_checkmate` calls `list_all_legal_moves` internally and only concludes after visiting all pseudo-legal moves, whereas python-chess returns early on the first legal move found.
 
 ### PERFT (move generation validation)
+| Depth | Nodes | Expected | Status | Time | NPS |
+|-------|-------|----------|--------|------|-----|
+| 1 | 20 | 20 | ✓ | 28.60 µs | 699.30K |
+| 2 | 400 | 400 | ✓ | 353.70 µs | 1.13M |
+| 3 | 8.90K | 8.90K | ✓ | 5.94 ms | 1.50M |
+| 4 | 197.28K | 197.28K | ✓ | 142.95 ms | 1.38M |
+| 5 | 4.87M | 4.87M | ✓ | 3.27 s | 1.49M |
 
-| Depth | Nodes | Time | NPS |
-|-----------|-------|-------|-----|
-| 1 | 20 | 34.10 µs | 586.51K |
-| 2 | 400 | 10.80 ms | 37.04K |
-| 3 | 8 902 | 31.61 ms | 281.59K |
-| 4 | 197 281 | 424.91 ms | 464.29K |
-| 5 | 4.87M | 5.50 s | 884.64K |
-| 6 | 119.06M | 116.28 s | 1.02M |
+Python chess is approximately 2.29 times slower.
 
 ---
 
