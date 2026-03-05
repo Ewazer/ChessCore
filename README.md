@@ -380,12 +380,12 @@ game = ChessCore()
 | `parse_move_and_validate(move_str)` | `move_str: str → bool` | Parses, detects promotion, validates. Sets `board.encoded_move_in_progress` and `promotion_value` |
 | `lan_to_encoded_move(lan_move)` | *(static)* `lan_move: str → tuple[int, int]` | Parses LAN (`"e2e4"`, `"e7e8q"`) → `(encoded_move, promotion_piece)`. Raises `ValueError` on invalid |
 | `lan_to_encoded_move_and_validate(lan_move)` | `lan_move: str → tuple[int, int] \| None` | Parses LAN, sets board state, validates. Returns `None` on failure |
-| `sen_to_encoded_move(board_obj, sen_move, side)` | *(static)* `→ tuple[int, int]` | Converts SAN (e.g., `"Nf3"`, `"O-O"`, `"e8=Q"`) → `(encoded_move, promotion_piece)` |
+| `san_to_encoded_move(board_obj, san_move, side)` | *(static)* `→ tuple[int, int]` | Converts SAN (e.g., `"Nf3"`, `"O-O"`, `"e8=Q"`) → `(encoded_move, promotion_piece)` |
 | `give_move_info(board_obj, encoded_move)` | *(static)* `→ None \| str` | Validates move source/target coherence. `None` = valid, `str` = reason |
 
 The last 3 game methods (`force_move`, `commit`, `is_game_over`) are designed for use by an AI engine.
 
-The parser methods (`move_parser`, `lan_to_encoded_move`, `sen_to_encoded_move`) all return a consistent `(encoded_move, promotion_piece)` tuple, where `promotion_piece` is `0` when no promotion occurs.
+The parser methods (`move_parser`, `lan_to_encoded_move`, `san_to_encoded_move`) all return a consistent `(encoded_move, promotion_piece)` tuple, where `promotion_piece` is `0` when no promotion occurs.
 
 #### Return values of `play_move()`
 
