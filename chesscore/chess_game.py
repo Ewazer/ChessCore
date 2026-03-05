@@ -3703,7 +3703,7 @@ class ChessCore:
             return ChessCore.lan_to_encoded_move(lower)
         
         if board_obj is not None:
-            result = ChessCore.sen_to_encoded_move(board_obj, move_str)
+            result = ChessCore.san_to_encoded_move(board_obj, move_str)
             return result if isinstance(result, tuple) else (result, 0)
             
         raise ValueError("SAN moves require a board instance for context.")
@@ -3795,12 +3795,12 @@ class ChessCore:
 
 
     @staticmethod
-    def sen_to_encoded_move(board_obj, sen_move, side=None) -> int:
+    def san_to_encoded_move(board_obj, san_move, side=None) -> int:
         """
         Convert a move in Standard Algebraic Notation (SAN) to an encoded move format.
 
         Args:
-            sen_move (str): Move in SAN format (e.g., "e4", "Nf3", "e8=Q").
+            san_move (str): Move in SAN format (e.g., "e4", "Nf3", "e8=Q").
             side (int, optional): Side color (WHITE=1 or BLACK=-1). If None, uses the current side to move (default).
         
         Returns:
@@ -3814,46 +3814,46 @@ class ChessCore:
         if side is None:
             side = board_obj.side_to_move
 
-        if sen_move in ["O-O", "O-O-O"]:
+        if san_move in ["O-O", "O-O-O"]:
             if side == WHITE:
-                if sen_move == "O-O":
+                if san_move == "O-O":
                     return SQUARES["e1"] | (SQUARES["g1"] << 6)
                 else:
                     return SQUARES["e1"] | (SQUARES["c1"] << 6)
             else:
-                if sen_move == "O-O":
+                if san_move == "O-O":
                     return SQUARES["e8"] | (SQUARES["g8"] << 6)
                 else:
                     return SQUARES["e8"] | (SQUARES["c8"] << 6)
                 
-        if not sen_move[-1].isdigit():       
-            if sen_move[-1] in ('Q', 'R', 'B', 'N') and '=' in sen_move:
-                promotion_piece = {'Q': QUEEN, 'R': ROOK, 'B': BISHOP, 'N': KNIGHT}[sen_move[-1]]
-                sen_move = sen_move[:-2]
+        if not san_move[-1].isdigit():       
+            if san_move[-1] in ('Q', 'R', 'B', 'N') and '=' in san_move:
+                promotion_piece = {'Q': QUEEN, 'R': ROOK, 'B': BISHOP, 'N': KNIGHT}[san_move[-1]]
+                san_move = san_move[:-2]
             
-            elif sen_move[-1] in ('q', 'r', 'b', 'n') and '=' in sen_move:
-                promotion_piece = {'q': QUEEN, 'r': ROOK, 'b': BISHOP, 'n': KNIGHT}[sen_move[-1]]
-                sen_move = sen_move[:-2]
+            elif san_move[-1] in ('q', 'r', 'b', 'n') and '=' in san_move:
+                promotion_piece = {'q': QUEEN, 'r': ROOK, 'b': BISHOP, 'n': KNIGHT}[san_move[-1]]
+                san_move = san_move[:-2]
 
-            elif sen_move[-1] in ('+', '#'):
-                sen_move = sen_move[:-1]
+            elif san_move[-1] in ('+', '#'):
+                san_move = san_move[:-1]
 
             else:
                 raise ValueError("Invalid SAN move: unrecognized promotion or check/mate symbol.")
 
 
-        to_square = SQUARES[sen_move[-2:]] 
+        to_square = SQUARES[san_move[-2:]] 
 
-        if 'x' in sen_move:
-            sen_move = sen_move.replace('x', '')
+        if 'x' in san_move:
+            san_move = san_move.replace('x', '')
             capture = True
 
-        if sen_move[0] in ('K', 'Q', 'R', 'B', 'N'):
-            piece_type = {'K': KING, 'Q': QUEEN, 'R': ROOK, 'B': BISHOP, 'N': KNIGHT}[sen_move[0]]
-            sen_move = sen_move[1:]
+        if san_move[0] in ('K', 'Q', 'R', 'B', 'N'):
+            piece_type = {'K': KING, 'Q': QUEEN, 'R': ROOK, 'B': BISHOP, 'N': KNIGHT}[san_move[0]]
+            san_move = san_move[1:]
 
-        if sen_move[:-2] in 'abcdefgh':
-            column = sen_move[:-2]
+        if san_move[:-2] in 'abcdefgh':
+            column = san_move[:-2]
 
         if piece_type == KING:
             if side == WHITE:
@@ -3959,7 +3959,7 @@ class ChessCore:
         """
 
         try:
-            encoded_move = board_obj.sen_to_encoded_move(san_move, side)
+            encoded_move = board_obj.san_to_encoded_move(san_move, side)
             board_obj.encoded_move_in_progress = encoded_move
             validation_result = ChessCore.give_move_info()
         
