@@ -435,6 +435,10 @@ pst = (
 
 MATE_SCORE = 99999
 
+TT_EXACT = 0
+TT_ALPHA = 1
+TT_BETA  = 2
+
 PAWN_PASSED_MG = (0, 10, 17, 15, 62, 167, 276, 0)
 PAWN_PASSED_EG = (0, 28, 33, 41, 72, 170, 260, 0)
 
@@ -442,6 +446,9 @@ MASK_PAWN_PASSED_MG = tuple(PAWN_PASSED_MG[square >> 3] for square in range(64))
 MASK_PAWN_PASSED_EG = tuple(PAWN_PASSED_EG[square >> 3] for square in range(64))
 
 MASK_EDGE = 0xFF818181818181FF 
+
+
+#These values ​​are taken from Stockfish 14
 
 KNIGHT_MOBILITY_MG = (-62, -53, -12, 4, 3, 13, 22, 28, 33)
 KNIGHT_MOBILITY_EG = (-81, -56, -30, -14, 8, 15, 23, 27, 33)
