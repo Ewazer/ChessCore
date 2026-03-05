@@ -866,6 +866,7 @@ Comparison against [python-chess 1.11.2](https://python-chess.readthedocs.io/).
 
 Python chess is approximately 2.29 times slower.
 
+Note: with pypy the NPS reaches 3.14 million.
 ---
 
 ## Contributing
