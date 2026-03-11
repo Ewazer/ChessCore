@@ -11,7 +11,7 @@ __all__ = [
     "BLACK",
     "WHITE_INDEX",
     "BLACK_INDEX",
-    "piece_note_style",
+    "PIECE_NOTE_STYLE",
     "SQUARES",
     "INVERSE_SQUARES",
     "SQUARE_MASKS",
@@ -106,7 +106,7 @@ END_COLOR = "\x1b[0m"
 
 PIECE_COLOR = "\033[38;5;236m"
 
-piece_note_style = {
+PIECE_NOTE_STYLE = {
     PAWN: f"{PIECE_COLOR}♙",   
     ROOK: f"{PIECE_COLOR}♖",   
     KNIGHT: f"{PIECE_COLOR}♘",  
