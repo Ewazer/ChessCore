@@ -3497,7 +3497,7 @@ class ChessDisplay:
             board_obj (object): Board object with bitboard attributes.
             side (int, optional): Side color (WHITE=1 or BLACK=-1).
         """
-        board_rendu = [piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(64)]
+        board_rendu = [PIECE_NOTE_STYLE[board_obj.get_piece_type_and_color(square)] for square in range(64)]
 
         if side == WHITE:
             board_rendu = (
@@ -3687,7 +3687,7 @@ class ChessDisplay:
         from_sq = last_encoded & 0x3F
         to_sq = (last_encoded >> 6) & 0x3F
 
-        board_rendu = [piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(64)]
+        board_rendu = [PIECE_NOTE_STYLE[board_obj.get_piece_type_and_color(square)] for square in range(64)]
         
         if side == WHITE:
             board_rendu = (
@@ -3750,7 +3750,7 @@ class ChessDisplay:
             to_sq = (move >> 6) & 0x3F
             highlight_squares.append(to_sq)
 
-        board_rendu = [piece_note_style[board_obj.get_piece_type_and_color(square)] for square in range(64)]
+        board_rendu = [PIECE_NOTE_STYLE[board_obj.get_piece_type_and_color(square)] for square in range(64)]
         
         if side == WHITE:
             board_rendu = (
