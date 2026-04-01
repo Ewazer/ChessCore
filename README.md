@@ -4,7 +4,7 @@
 
 ChessCore is an optimized chess core, written entirely in **native Python** (no external dependencies required).
 
-It uses a **bitboard** representation of the chess board coupled with **magic bitboards** for piece move generation, achieving good performance for native Python.
+It uses a bitboard representation of the chess board coupled with magic bitboards for piece move generation, achieving good performance for native Python.
 
 ---
 
